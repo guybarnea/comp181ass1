@@ -206,25 +206,24 @@ done))
    (*parser <SymbolChar>)
    *plus
    (*pack (lambda (lst)
-	(string->symbol (list->string lst)))) 
+ (list->string lst))) 
 done))
+
+
+(define <notInfixSymbol>
+	(const (lambda(str)
+	(or (char=? str #\+)  (char=? str #\-) (char=? str #\*) 
+	(char=? str #\/) (char=? str #\*) (char=? str #\^)))))
 
 (define <InfixSymbol>
   (new
    (*parser <Symbol>)
-   (*parser (char #\+)) 
-   *diff
-   (*parser (char #\-)) 
-   *diff
-   (*parser (char #\*)) 
-   *diff
-   (*parser (word "**")) 
-   *diff
-   (*parser (char #\^)) 
-   *diff
-   (*parser (char #\/)) 
+   (*parser <notInfixSymbol>)
    *diff
 done))
+
+
+
 
 (define <check>
 (new
