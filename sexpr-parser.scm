@@ -271,4 +271,15 @@ done))
   (new
    (*parser <Symbol>)
    (*only-if notInfixSymbol)
+done
+))
+
+(define <PowerSymbol>
+  (new
+   (*parser (word "**"))
+   (*parser (word "^"))
+   (*disj 2)
+   (*pack (lambda (word)
+   	(list->string word)))
 done))
+
