@@ -447,6 +447,7 @@ done))
     (*pack-with (lambda(left_br sexpr right_br) sexpr ))
     done)) 
 
+	   
 (define <ImproperList>
   (new
     (*parser (word "("))
@@ -457,6 +458,7 @@ done))
     (*caten 5)
     (*pack-with (lambda(left_br sexpr1 dot sexpr2 right_br ) `(,@sexpr1 . ,sexpr2)))
     done)) 
+	
 	   
 (define <Vector>
   (new
@@ -466,6 +468,7 @@ done))
     (*caten 3)
     (*pack-with (lambda(left_br sexpr right_br ) `(#(,@sexpr)) ))
       done))
+	
 	   
 (define <Quoted>
   (new
@@ -474,6 +477,7 @@ done))
     (*caten 2)
     (*pack-with (lambda(quot sexpr) `('(,@sexpr)) ))
       done))
+	
 	   
 (define <QuasiQuoted>
   (new
@@ -482,6 +486,7 @@ done))
     (*caten 2)
     (*pack-with (lambda(qq sexpr)  (list 'quasiquote sexpr)))
       done))
+	
 	   
 (define <Unquoted>
   (new
@@ -491,6 +496,7 @@ done))
     (*pack-with (lambda(unquot sexpr) (list 'unquote sexpr) ))
       done))
  
+	   
 (define <UnquoteAndSpliced>
   (new
     (*parser (word ",@"))
@@ -499,5 +505,25 @@ done))
     (*pack-with (lambda(unquot sexpr) (list 'unquote-splicing sexpr)) )
       done)) 
 	   
+	   
+(define <CBNameSyntax1>
+  (new
+    (*parser (word "@"))
+    (*parser <Sexpr>) 
+    (*caten 2)
+    (*pack-with (lambda(shtrudel sexpr) (list 'cbname sexpr)  ))
+      done)) 
+	   
+	   
+  (define <CBNameSyntax2>
+  (new
+    (*parser (word "{"))
+    (*parser <Sexpr>)
+    (*parser (word "}"))
+    (*caten 3)
+    (*pack-with (lambda(left_br sexpr right_br) (list 'cbname sexpr) ))
+    done))  
 
-
+	   
+(define <CBName>
+  (disj <CBNameSyntax1> <CBNameSyntax2>))
