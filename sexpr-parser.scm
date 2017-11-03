@@ -283,3 +283,12 @@ done
    	(list->string word)))
 done))
 
+(define <InfixAdd>
+  (new
+   (*parser <Natural>)
+   (*parser (char #\+))
+   (*parser <Natural>)
+   (*caten 3)
+   (*pack-with (lambda (first _ second) (+ first second)))
+done
+))
