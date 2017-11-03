@@ -462,3 +462,12 @@ done
     (*caten 3)
     (*pack-with (lambda(left_br sexpr right_br ) `(#(,@sexpr)) ))
       done))
+	   
+(define <Quoted>
+  (new
+    (*parser (word "'"))
+    (*parser <Sexpr>) 
+    (*caten 2)
+    (*pack-with (lambda(quot sexpr) `('(,@sexpr)) ))
+      done))
+
