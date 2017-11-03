@@ -322,4 +322,15 @@ done
     (*parser (word ")"))
     (*caten 3)
     (*pack-with (lambda(left_br sexpr right_br) sexpr ))
-    done))  
+    done)) 
+
+(define <ImproperList>
+  (new
+    (*parser (word "("))
+    (*parser <sexprWithSpace>) *plus
+    (*parser (word ".") )
+    (*parser <Sexpr>)
+    (*parser (word ")"))
+    (*caten 5)
+    (*pack-with (lambda(left_br sexpr1 dot sexpr2 right_br ) `(,@sexpr1 . ,sexpr2)))
+    done)) 
