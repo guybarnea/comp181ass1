@@ -8,6 +8,13 @@
 ;))
 ;path:/users/studs/bsc/2016/alonye/Downloads/comp181ass1-master/
 
+(define is-unicode
+  (lambda (num) 
+    (and
+	(or (= num #x0) (> num #x0)) 
+	(or (= num #x10FFFF) (< num #x10FFFF)))
+))
+
 (define list->number
   (lambda (base)
     (lambda (lst)
@@ -141,6 +148,19 @@ done))
 (list->string str)))
 done)) 
 
+(define <StringHexChar>
+  (new
+  (*parser (word-ci "\\x"))
+  (*parser <HexChar>)
+  *star
+  (*parser (char #\;))
+  (*caten 3)
+  (*pack-with (lambda (x hex semicolon)
+		  (list->hex-number `(,@hex))))
+  (*only-if is-unicode)
+  (*pack integer->char)			    
+done))
+
 ;(define <InfixExtension>
   ;(new 
    ; (*parser <InfixPrefixExtensionPrefix>)  
@@ -216,13 +236,12 @@ done))
 done))
 
 ;############## NUMBER ####################
-(define <Number> (disj <Fraction> <Integer> ))
-
 (define <Natural>
   (new
    (*parser (range #\0 #\9)) *plus
    (*pack list->decimal-number)
 done))
+
 
 (define <Integer>
   (new
@@ -241,7 +260,6 @@ done))
    (*disj 3)
 done))
 
-
 (define <Fraction>
   (new
    (*parser <Integer>)
@@ -252,7 +270,16 @@ done))
    (*pack-with (lambda (int _ num) (/ int num)))
   done))
 
-#| (define <StringHexChar>
+
+(define <Number> (disj <Fraction> <Integer> ))
+
+
+
+
+
+
+#| 
+(define <StringHexChar>
     (new
       (*parser (word-ci "\\x"))
       (*parser <HexChar>) *plus
@@ -261,3 +288,16 @@ done))
       (*pack-with (lambda(bbx hexchar semicolon) (append bbx hexchar `(,semicolon) )))
       (*pack (lambda(lst) (list->string lst)))
       done)) |#
+
+#| (define <StringHexChar>
+  (new
+  (*parser (word-ci "\\x"))
+  (*parser <HexChar>)
+  *star
+  (*parser (char #\;))
+  (*caten 3)
+  (*pack-with (lambda (x hex semicolon)
+		  (list->hex-number `(,@hex))))
+  (*only-if is-unicode)
+  (*pack integer->char)			    
+done)) |#
