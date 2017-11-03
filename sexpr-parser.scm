@@ -259,7 +259,6 @@ done))
 
 ;############## InfixExtension ####################
 (define <InfixPrefixExtensionPrefix>
-  (word)
 (disj (word "##") (word "#%")))
 
 (define notInfixSymbol
