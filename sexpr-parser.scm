@@ -4,15 +4,15 @@
 ;(define <sexpr>
 ;    (disj <Boolean> <Char> <String> <Number> <Symbol>
 ;     <ProperList> <ImproperList> <Vector> <Quoted> <QuasiQuoted> <Unquoted> 
-;	  <UnquoteAndSpliced> <CBName>  <InfixExtension> 
+;   <UnquoteAndSpliced> <CBName>  <InfixExtension> 
 ;))
 ;path:/users/studs/bsc/2016/alonye/Downloads/comp181ass1-master/
 
 (define is-unicode
   (lambda (num) 
     (and
-	(or (= num #x0) (> num #x0)) 
-	(or (= num #x10FFFF) (< num #x10FFFF)))
+  (or (= num #x0) (> num #x0)) 
+  (or (= num #x10FFFF) (< num #x10FFFF)))
 ))
 
 (define list->number
@@ -54,8 +54,8 @@ done))
 (define is-unicode
   (lambda (num) 
     (and
-	(or (= num #x0) (> num #x0)) 
-	(or (= num #x10FFFF) (< num #x10FFFF)))
+  (or (= num #x0) (> num #x0)) 
+  (or (= num #x10FFFF) (< num #x10FFFF)))
 ))
 
 
@@ -78,14 +78,14 @@ done))
    (*parser <NamedChar>)
    (*pack (lambda (str)
     (cond  ((string-ci=? "lambda" str) (integer->char 955))
-	         ((string-ci=? "newline" str) #\newline)
-	         ((string-ci=? "nul" str) #\nul)
-	         ((string-ci=? "page" str) #\page)
+           ((string-ci=? "newline" str) #\newline)
+           ((string-ci=? "nul" str) #\nul)
+           ((string-ci=? "page" str) #\page)
            ((string-ci=? "return" str) #\return)
            ((string-ci=? "space" str) #\space)
            ((string-ci=? "tab" str) #\tab)
            (else #f))
-	))
+  ))
    (*parser <HexUnicodeChar>)
    (*parser <VisibleSimpleChar>)
    (*disj 3)
@@ -104,8 +104,8 @@ done))
   (*parser (char #\;))
   (*caten 3)
   (*pack-with (lambda (x hex semicolon)
-		  (list->hex-number `(,@hex))))
-  (*pack integer->char)			    
+      (list->hex-number `(,@hex))))
+  (*pack integer->char)         
 done)) 
 
 (define <StringMetaChar>
@@ -118,22 +118,22 @@ done))
    (*parser (word-ci "\\r"))  ; \r
    (*disj 6)
    (*pack (lambda(meta-ch)
-   	(let ((str (list->string meta-ch)))
-   	  (cond 
-   	  ((string-ci=? "\\\\" str) #\\)
-	  ((string-ci=? "\\\"" str) #\")
-	  ((string-ci=? "\\t" str) #\t)
-	  ((string-ci=? "\\f" str) #\f)
+    (let ((str (list->string meta-ch)))
+      (cond 
+      ((string-ci=? "\\\\" str) #\\)
+    ((string-ci=? "\\\"" str) #\")
+    ((string-ci=? "\\t" str) #\t)
+    ((string-ci=? "\\f" str) #\f)
       ((string-ci=? "\\n" str) #\n)
       ((string-ci=? "\\r" str) #\r)
       (else #f)))
-   	))
+    ))
 done))
 
 (define <StringLiteralChar> (const (lambda(ch) (and (not(char=? #\\ ch)) (not(char=? #\" ch))))))
 
 (define <StringChar> 
-	(disj <StringHexChar> <StringMetaChar> <StringLiteralChar>))
+  (disj <StringHexChar> <StringMetaChar> <StringLiteralChar>))
 
 (define <String>
   (new
@@ -156,9 +156,9 @@ done))
   (*parser (char #\;))
   (*caten 3)
   (*pack-with (lambda (x hex semicolon)
-		  (list->hex-number `(,@hex))))
+      (list->hex-number `(,@hex))))
   (*only-if is-unicode)
-  (*pack integer->char)			    
+  (*pack integer->char)         
 done))
 
 ;(define <InfixExtension>
@@ -259,12 +259,13 @@ done))
 
 ;############## InfixExtension ####################
 (define <InfixPrefixExtensionPrefix>
+  (word)
 (disj (word "##") (word "#%")))
 
 (define notInfixSymbol
-	(lambda (str)
-	(not (or (string-ci=? str "+")  (string-ci=? str "-") (string-ci=? str "*") 
-	(string-ci=? str "//") (string-ci=? str "**") (string-ci=? str "^")))))
+  (lambda (str)
+  (not (or (string-ci=? str "+")  (string-ci=? str "-") (string-ci=? str "*") 
+  (string-ci=? str "//") (string-ci=? str "**") (string-ci=? str "^")))))
 
 (define <InfixSymbol>
   (new
@@ -279,7 +280,7 @@ done
    (*parser (word "^"))
    (*disj 2)
    (*pack (lambda (word)
-   	(list->string word)))
+    (list->string word)))
 done))
 
 
@@ -368,16 +369,13 @@ done
 done
 ))
 
- 
-
-
 
 (define <InfixArrayGet>
   (new
    (*parser <InfixSymbol>)
    (*parser (char #\[))
    (*parser <Natural>)
-   (*parser (char #\]))	
+   (*parser (char #\])) 
    (*caten 4)
    (*pack-with (lambda (first _ second ._) (list 'vector-ref first second)))
 done
@@ -404,7 +402,7 @@ done))
    (*parser <InfixSymbol>)
    (*parser (word "(" ))
    (*parser <InfixArgList>)
-   (*parser (word ")" ))	
+   (*parser (word ")" ))  
    (*caten 4)
    (*pack-with (lambda (first _ second ._) `(,first ,@second)))
 done
@@ -414,7 +412,7 @@ done
   (new
    (*parser (word "(" ))
    (*parser <InfixSymbol>)
-   (*parser (word ")" ))	
+   (*parser (word ")" ))  
    (*caten 3)
    (*pack-with (lambda (_ exp ._) (list exp)))
 done
@@ -439,17 +437,17 @@ done))
 (define <sexprWithSpace>                                                    
   (new
 
-    (*parser <Sexpr>)
+    (*delayed (lambda () <Sexpr>))
     (*parser (char #\space))
     (*caten 2)
     (*pack-with (lambda (sexpr space) sexpr )) 
 
     (*parser (char #\space))
-    (*parser <Sexpr>)
+    (*delayed (lambda () <Sexpr>))
     (*caten 2)
     (*pack-with (lambda (space sexpr) sexpr)) 
 
-    (*parser <Sexpr>)
+    (*delayed (lambda () <Sexpr>))
 
     (*disj 3)
 
@@ -465,19 +463,19 @@ done))
     (*pack-with (lambda(left_br sexpr right_br) sexpr ))
     done)) 
 
-	   
+     
 (define <ImproperList>
   (new
     (*parser (word "("))
     (*parser <sexprWithSpace>) *plus
     (*parser (word ".") )
-    (*parser <Sexpr>)
+    (*delayed (lambda () <Sexpr>))
     (*parser (word ")"))
     (*caten 5)
     (*pack-with (lambda(left_br sexpr1 dot sexpr2 right_br ) `(,@sexpr1 . ,sexpr2)))
     done)) 
-	
-	   
+  
+     
 (define <Vector>
   (new
     (*parser (word "#("))
@@ -486,62 +484,62 @@ done))
     (*caten 3)
     (*pack-with (lambda(left_br sexpr right_br ) `(#(,@sexpr)) ))
       done))
-	
-	   
+  
+     
 (define <Quoted>
   (new
     (*parser (word "'"))
-    (*parser <Sexpr>) 
+    (*delayed (lambda () <Sexpr>))
     (*caten 2)
     (*pack-with (lambda(quot sexpr) `('(,@sexpr)) ))
       done))
-	
-	   
+  
+     
 (define <QuasiQuoted>
   (new
     (*parser (word "`"))
-    (*parser <Sexpr>) 
+    (*delayed (lambda () <Sexpr>))
     (*caten 2)
     (*pack-with (lambda(qq sexpr)  (list 'quasiquote sexpr)))
       done))
-	
-	   
+  
+     
 (define <Unquoted>
   (new
     (*parser (word ","))
-    (*parser <Sexpr>) 
+    (*delayed (lambda () <Sexpr>)) 
     (*caten 2)
     (*pack-with (lambda(unquot sexpr) (list 'unquote sexpr) ))
       done))
  
-	   
+     
 (define <UnquoteAndSpliced>
   (new
     (*parser (word ",@"))
-    (*parser <Sexpr>) 
+    (*delayed (lambda () <Sexpr>)) 
     (*caten 2)
     (*pack-with (lambda(unquot sexpr) (list 'unquote-splicing sexpr)) )
       done)) 
-	   
-	   
+     
+     
 (define <CBNameSyntax1>
   (new
     (*parser (word "@"))
-    (*parser <Sexpr>) 
+    (*delayed (lambda () <Sexpr>))
     (*caten 2)
     (*pack-with (lambda(shtrudel sexpr) (list 'cbname sexpr)  ))
       done)) 
-	   
-	   
+     
+     
   (define <CBNameSyntax2>
   (new
     (*parser (word "{"))
-    (*parser <Sexpr>)
+    (*delayed (lambda () <Sexpr>))
     (*parser (word "}"))
     (*caten 3)
     (*pack-with (lambda(left_br sexpr right_br) (list 'cbname sexpr) ))
     done))  
 
-	   
+     
 (define <CBName>
   (disj <CBNameSyntax1> <CBNameSyntax2>))
