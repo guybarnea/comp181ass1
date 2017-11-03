@@ -398,6 +398,7 @@ done
 ))
 	   
 (define <InfixExpression>
+(new
 (*parser <InfixAdd>)
 (*parser <InfixNeg>)
 (*parser <InfixSub>)
@@ -410,6 +411,9 @@ done
 (*parser <InfixSexprEscape>)
 (*parser <InfixSymbol>)
 (*parser <Number>)
+(*disj 11)
+done))
+
 
 
 ; Helper function
