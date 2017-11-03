@@ -258,7 +258,6 @@ done))
 
 
 ;############## InfixExtension ####################
-
 (define <InfixPrefixExtensionPrefix>
 (disj (word "##") (word "#%")))
 
@@ -290,6 +289,111 @@ done))
    (*parser <Natural>)
    (*caten 3)
    (*pack-with (lambda (first _ second) (+ first second)))
+done
+))
+
+(define <InfixNeg>
+  (new
+   (*parser (char #\-))
+   (*parser <InfixAdd>)
+   (*caten 2)
+   (*pack-with (lambda (_ num) (- num)))
+done
+))
+
+(define <InfixSub>
+  (new
+   (*parser <InfixAdd>)
+   (*parser (char #\-))
+   (*parser <InfixAdd>)
+   (*caten 3)
+   (*pack-with (lambda (first _ second) (- first second)))
+done
+))
+
+(define <InfixMul>
+  (new
+   (*parser <InfixAdd>)
+   (*parser (char #\*))
+   (*parser <InfixAdd>)
+   (*caten 3)
+   (*pack-with (lambda (first _ second) (* first second)))
+done
+))
+
+(define <InfixDiv>
+  (new
+   (*parser <InfixAdd>)
+   (*parser (char #\/))
+   (*parser <InfixAdd>)
+   (*caten 3)
+   (*pack-with (lambda (first _ second) (/ first second)))
+done
+))
+
+(define <InfixPow>
+  (new
+   (*parser <InfixAdd>)
+   (*parser <PowerSymbol>)
+   (*parser <InfixAdd>)
+   (*caten 3)
+   (*pack-with (lambda (first _ second) (expt first second)))
+done
+))
+
+(define <InfixArrayGet>
+  (new
+   (*parser <InfixSymbol>)
+   (*parser (char #\[))
+   (*parser <Natural>)
+   (*parser (char #\]))	
+   (*caten 4)
+   (*pack-with (lambda (first _ second ._) (list 'vector-ref first second)))
+done
+))
+
+
+(define <InfixArgList>
+  (new
+    (*delayed (lambda () <InfixSymbol>))
+    (*parser (char #\,))
+    (*delayed (lambda () <InfixSymbol>))   
+    (*caten 2)
+    (*pack-with (lambda (_ str) str))
+    *star
+    (*caten 2)
+    (*pack-with (lambda (first second) `(,first ,@second)))
+    
+    (*parser <epsilon>)
+    (*disj 2)
+done)) 
+
+(define <InfixFuncall>
+  (new
+   (*parser <InfixSymbol>)
+   (*parser (word "(" ))
+   (*parser <InfixArgList>)
+   (*parser (word ")" ))	
+   (*caten 4)
+   (*pack-with (lambda (first _ second ._) `(,first ,@second)))
+done
+))
+
+(define <InfixParen>
+  (new
+   (*parser (word "(" ))
+   (*parser <InfixSymbol>)
+   (*parser (word ")" ))	
+   (*caten 3)
+   (*pack-with (lambda (_ exp ._) (list exp)))
+done
+))
+
+(define <InfixSexprEscape>
+  (new
+   (*parser <InfixPrefixExtensionPrefix>)
+   (*parser <InfixSymbol>)
+   (*caten 2)
 done
 ))
 
