@@ -258,7 +258,7 @@ done))
 
 
 ;############## InfixExtension ####################
-(define <InfixPrefixExtensionPrefix>
+define <InfixPrefixExtensionPrefix>
 (disj (word "##") (word "#%")))
 
 (define notInfixSymbol
@@ -282,22 +282,65 @@ done
    	(list->string word)))
 done))
 
-(define <InfixAdd>
-  (new
-   (*parser <Natural>)
-   (*parser (char #\+))
-   (*parser <Natural>)
-   (*caten 3)
-   (*pack-with (lambda (first _ second) (+ first second)))
-done
-))
 
-(define <InfixNeg>
+
+#| (define <InfixNeg>
   (new
    (*parser (char #\-))
    (*parser <InfixAdd>)
    (*caten 2)
    (*pack-with (lambda (_ num) (- num)))
+done
+)) |#
+
+(define <InfixPow>
+  (new
+   (*parser <InfixSymbol>)
+   (*parser <PowerSymbol>)
+   (*parser <InfixSymbol>)
+   (*caten 3)
+   (*pack-with (lambda (first _ second) `(expt ,first ,second)))
+   (*parser <InfixSymbol>)
+   (*disj 2)
+done
+))
+
+(define <InfixDiv>
+  (new
+   (*parser <InfixPow>)
+   (*parser (char #\/))
+   (*parser <InfixPow>)
+   (*caten 3)
+   (*pack-with (lambda (first _ second) `(/ ,first ,second)))
+   (*parser <InfixPow>)
+   (*disj 2)
+done
+))
+
+ (define <InfixMul>
+  (new
+   (*parser <InfixDiv>)
+   (*parser (char #\*))
+   (*parser <InfixDiv>)
+   (*caten 3)
+   (*pack-with (lambda (first _ second) `(* ,first ,second)))
+   (*parser <InfixDiv>)
+   (*disj 2)
+
+done
+))
+
+
+(define <InfixAdd>
+  (new
+   (*parser <InfixMul>)
+   (*parser (char #\+))
+   (*parser <InfixMul>)
+   (*caten 3)
+   (*pack-with (lambda (first _ second) `(+ ,first ,second)))
+   (*parser <InfixMul>)
+   (*disj 2)
+
 done
 ))
 
@@ -307,39 +350,15 @@ done
    (*parser (char #\-))
    (*parser <InfixAdd>)
    (*caten 3)
-   (*pack-with (lambda (first _ second) (- first second)))
+   (*pack-with (lambda (first _ second) `(- ,first ,second)))
+   (*parser <InfixAdd>)
+   (*disj 2)
 done
 ))
 
-(define <InfixMul>
-  (new
-   (*parser <InfixAdd>)
-   (*parser (char #\*))
-   (*parser <InfixAdd>)
-   (*caten 3)
-   (*pack-with (lambda (first _ second) (* first second)))
-done
-))
+ 
 
-(define <InfixDiv>
-  (new
-   (*parser <InfixAdd>)
-   (*parser (char #\/))
-   (*parser <InfixAdd>)
-   (*caten 3)
-   (*pack-with (lambda (first _ second) (/ first second)))
-done
-))
 
-(define <InfixPow>
-  (new
-   (*parser <InfixAdd>)
-   (*parser <PowerSymbol>)
-   (*parser <InfixAdd>)
-   (*caten 3)
-   (*pack-with (lambda (first _ second) (expt first second)))
-done
-))
 
 (define <InfixArrayGet>
   (new
@@ -396,25 +415,11 @@ done
    (*caten 2)
 done
 ))
-	   
-(define <InfixExpression>
+
+(define  <InfixExpression>
 (new
-(*parser <InfixAdd>)
-(*parser <InfixNeg>)
 (*parser <InfixSub>)
-(*parser <InfixMul>)
-(*parser <InfixDiv>)
-(*parser <InfixPow>)
-(*parser <InfixArrayGet>)
-(*parser <InfixFuncall>)
-(*parser <InfixParen>)
-(*parser <InfixSexprEscape>)
-(*parser <InfixSymbol>)
-(*parser <Number>)
-(*disj 11)
-done))
-
-
+done)) 
 
 ; Helper function
 ; #####################################################################
