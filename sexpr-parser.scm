@@ -295,16 +295,14 @@ done
 
 (define <InfixPow>
   (new
-   (*parser <Number>)
-   (*parser <InfixSymbol>)
-   (*disj 2)
+   (*parser <Natural>)
    (*parser <PowerSymbol>)
-   (*parser <Number>)
-   (*parser <InfixSymbol>)
-   (*disj 2)
+   (*parser <Natural>)
    (*caten 3)
    (*pack-with (lambda (first _ second) `(expt ,first ,second)))
-   (*parser <Number>)
+   (*parser <Natural>)
+   (*parser <InfixSymbol>)
+   (*disj 2)
    (*disj 2)
 done
 ))
