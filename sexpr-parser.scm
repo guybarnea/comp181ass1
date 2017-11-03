@@ -292,10 +292,9 @@ done))
    (*pack-with (lambda (first _ second) (+ first second)))
 done
 ))
-	   
-;#######################################################################
-; Using spaces                                                        
-; ⟨S⟩ ::=  ⟨S⟩| ⟨S⟩_⟨S⟩ |⟨S⟩_⟨S⟩_⟨S⟩
+
+; Helper function
+; #####################################################################
 (define <sexprWithSpace>                                                    
   (new
 
