@@ -396,6 +396,21 @@ done
    (*caten 2)
 done
 ))
+	   
+(define <InfixExpression>
+(*parser <InfixAdd>)
+(*parser <InfixNeg>)
+(*parser <InfixSub>)
+(*parser <InfixMul>)
+(*parser <InfixDiv>)
+(*parser <InfixPow>)
+(*parser <InfixArrayGet>)
+(*parser <InfixFuncall>)
+(*parser <InfixParen>)
+(*parser <InfixSexprEscape>)
+(*parser <InfixSymbol>)
+(*parser <Number>)
+
 
 ; Helper function
 ; #####################################################################
