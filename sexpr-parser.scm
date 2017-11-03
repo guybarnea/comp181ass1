@@ -262,9 +262,9 @@ done))
 (disj (word "##") (word "#%")))
 
 (define notInfixSymbol
-  (lambda (str)
-  (not (or (string-ci=? str "+")  (string-ci=? str "-") (string-ci=? str "*") 
-  (string-ci=? str "//") (string-ci=? str "**") (string-ci=? str "^")))))
+	(lambda (str)
+	(not (or (string-ci=? str "+")  (string-ci=? str "-") (string-ci=? str "*") 
+	(string-ci=? str "//") (string-ci=? str "**") (string-ci=? str "^")))))
 
 (define <InfixSymbol>
   (new
@@ -279,10 +279,18 @@ done
    (*parser (word "^"))
    (*disj 2)
    (*pack (lambda (word)
-    (list->string word)))
+   	(list->string word)))
 done))
 
-
+(define <InfixParen>
+  (new
+   (*parser (word "(" ))
+   (*parser <InfixSymbol>)
+   (*parser (word ")" ))  
+   (*caten 3)
+   (*pack-with (lambda (_ exp ._) (list exp)))
+done
+))
 
 #| (define <InfixNeg>
   (new
@@ -294,61 +302,109 @@ done
 )) |#
 
 (define <InfixPow>
-  (new
-   (*parser <Natural>)
+ (new
+   (*parser <Number>)
    (*parser <PowerSymbol>)
-   (*parser <Natural>)
+   (*parser <Number>)
    (*caten 3)
    (*pack-with (lambda (first _ second) `(expt ,first ,second)))
-   (*parser <Natural>)
+
+   (*parser <PowerSymbol>)
+   (*parser <Number>)
+   (*caten 2)
+   (*pack-with (lambda (first second) second))
+   *star
+
+
+   (*caten 2)
+   (*pack-with (lambda (first second) 
+   (if (null? second)
+    first
+   `,(fold-left (lambda (x y) `(expt ,x ,y)) first second))))
+
+   (*parser <Number>)
    (*parser <InfixSymbol>)
-   (*disj 2)
-   (*disj 2)
+   (*disj 3)
 done
 ))
 
 (define <InfixDiv>
-  (new
+ (new
    (*parser <InfixPow>)
    (*parser (char #\/))
-   (*delayed (lambda () <InfixDiv>))
    (*parser <InfixPow>)
-   (*disj 2)
    (*caten 3)
    (*pack-with (lambda (first _ second) `(/ ,first ,second)))
+
+   (*parser (char #\/))
+   (*parser <InfixPow>)
+   (*caten 2)
+   (*pack-with (lambda (first second) second))
+   *star
+
+
+   (*caten 2)
+   (*pack-with (lambda (first second) 
+   (if (null? second)
+    first
+   `,(fold-left (lambda (x y) `(/ ,x ,y)) first second))))
+
    (*parser <InfixPow>)
    (*disj 2)
 done
 ))
 
  (define <InfixMul>
-  (new
+ (new
    (*parser <InfixDiv>)
    (*parser (char #\*))
-   (*delayed (lambda () <InfixMul>))
    (*parser <InfixDiv>)
-   (*disj 2)
    (*caten 3)
    (*pack-with (lambda (first _ second) `(* ,first ,second)))
+
+   (*parser (char #\*))
+   (*parser <InfixDiv>)
+   (*caten 2)
+   (*pack-with (lambda (first second) second))
+   *star
+
+
+   (*caten 2)
+   (*pack-with (lambda (first second) 
+   (if (null? second)
+    first
+   `,(fold-left (lambda (x y) `(* ,x ,y)) first second))))
+
    (*parser <InfixDiv>)
    (*disj 2)
-
 done
 ))
+
 
 
 (define <InfixAdd>
   (new
    (*parser <InfixMul>)
    (*parser (char #\+))
-   (*delayed (lambda () <InfixAdd>))
    (*parser <InfixMul>)
-   (*disj 2)
    (*caten 3)
    (*pack-with (lambda (first _ second) `(+ ,first ,second)))
+
+   (*parser (char #\+))
+   (*parser <InfixMul>)
+   (*caten 2)
+   (*pack-with (lambda (first second) second))
+   *star
+
+
+   (*caten 2)
+   (*pack-with (lambda (first second) 
+   (if (null? second)
+    first
+   `,(fold-left (lambda (x y) `(+ ,x ,y)) first second))))
+
    (*parser <InfixMul>)
    (*disj 2)
-
 done
 ))
 
@@ -356,15 +412,30 @@ done
   (new
    (*parser <InfixAdd>)
    (*parser (char #\-))
-   (*delayed (lambda () <InfixSub>))
    (*parser <InfixAdd>)
-   (*disj 2)
    (*caten 3)
    (*pack-with (lambda (first _ second) `(- ,first ,second)))
+
+   (*parser (char #\-))
+   (*parser <InfixAdd>)
+   (*caten 2)
+   (*pack-with (lambda (first second) second))
+   *star
+
+
+   (*caten 2)
+   (*pack-with (lambda (first second) 
+   (if (null? second)
+    first
+   `,(fold-left (lambda (x y) `(- ,x ,y)) first second))))
+
    (*parser <InfixAdd>)
    (*disj 2)
 done
 ))
+
+ 
+
 
 
 (define <InfixArrayGet>
@@ -372,7 +443,7 @@ done
    (*parser <InfixSymbol>)
    (*parser (char #\[))
    (*parser <Natural>)
-   (*parser (char #\])) 
+   (*parser (char #\]))	
    (*caten 4)
    (*pack-with (lambda (first _ second ._) (list 'vector-ref first second)))
 done
@@ -399,21 +470,13 @@ done))
    (*parser <InfixSymbol>)
    (*parser (word "(" ))
    (*parser <InfixArgList>)
-   (*parser (word ")" ))  
+   (*parser (word ")" ))	
    (*caten 4)
    (*pack-with (lambda (first _ second ._) `(,first ,@second)))
 done
 ))
 
-(define <InfixParen>
-  (new
-   (*parser (word "(" ))
-   (*parser <InfixSymbol>)
-   (*parser (word ")" ))  
-   (*caten 3)
-   (*pack-with (lambda (_ exp ._) (list exp)))
-done
-))
+
 
 (define <InfixSexprEscape>
   (new
