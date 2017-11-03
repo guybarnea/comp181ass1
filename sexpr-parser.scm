@@ -474,4 +474,14 @@ done))
     (*caten 2)
     (*pack-with (lambda(quot sexpr) `('(,@sexpr)) ))
       done))
+	   
+(define <QuasiQuoted>
+  (new
+    (*parser (word "`"))
+    (*parser <Sexpr>) 
+    (*caten 2)
+    (*pack-with (lambda(qq sexpr)  (list 'quasiquote sexpr)))
+      done))
+	   
+
 
