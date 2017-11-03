@@ -170,8 +170,7 @@ done))
 ;done))
 
 
-(define <InfixPrefixExtensionPrefix>
-(disj (word "##") (word "#%")))
+
 
 (define <SymbolChar>
   (new
@@ -202,28 +201,11 @@ done))
 done))
 
 
-(define <notInfixSymbol>
-	(const (lambda(str)
-	(or (char=? str #\+)  (char=? str #\-) (char=? str #\*) 
-	(char=? str #\/) (char=? str #\*) (char=? str #\^)))))
-
-(define <InfixSymbol>
-  (new
-   (*parser <Symbol>)
-   (*parser <notInfixSymbol>)
-   *diff
-done))
 
 
 
 
-(define <check>
-(new
-(*parser (range #\2 #\9))
-(*parser (range #\2 #\9))
-*not-followed-by
-done))
-
+;############## Boolean ####################
 (define <Boolean> 
   (new
    (*parser (word-ci "#t"))
@@ -275,29 +257,18 @@ done))
 
 
 
+;############## InfixExtension ####################
 
+(define <InfixPrefixExtensionPrefix>
+(disj (word "##") (word "#%")))
 
+(define notInfixSymbol
+	(lambda (str)
+	(not (or (string-ci=? str "+")  (string-ci=? str "-") (string-ci=? str "*") 
+	(string-ci=? str "//") (string-ci=? str "**") (string-ci=? str "^")))))
 
-#| 
-(define <StringHexChar>
-    (new
-      (*parser (word-ci "\\x"))
-      (*parser <HexChar>) *plus
-      (*parser (char #\;))
-      (*caten 3)
-      (*pack-with (lambda(bbx hexchar semicolon) (append bbx hexchar `(,semicolon) )))
-      (*pack (lambda(lst) (list->string lst)))
-      done)) |#
-
-#| (define <StringHexChar>
+(define <InfixSymbol>
   (new
-  (*parser (word-ci "\\x"))
-  (*parser <HexChar>)
-  *star
-  (*parser (char #\;))
-  (*caten 3)
-  (*pack-with (lambda (x hex semicolon)
-		  (list->hex-number `(,@hex))))
-  (*only-if is-unicode)
-  (*pack integer->char)			    
-done)) |#
+   (*parser <Symbol>)
+   (*only-if notInfixSymbol)
+done))
