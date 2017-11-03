@@ -292,3 +292,35 @@ done))
    (*pack-with (lambda (first _ second) (+ first second)))
 done
 ))
+	   
+;#######################################################################
+; Using spaces                                                        
+; ⟨S⟩ ::=  ⟨S⟩| ⟨S⟩_⟨S⟩ |⟨S⟩_⟨S⟩_⟨S⟩
+(define <sexprWithSpace>                                                    
+  (new
+
+    (*parser <Sexpr>)
+    (*parser (char #\space))
+    (*caten 2)
+    (*pack-with (lambda (sexpr space) sexpr )) 
+
+    (*parser (char #\space))
+    (*parser <Sexpr>)
+    (*caten 2)
+    (*pack-with (lambda (space sexpr) sexpr)) 
+
+    (*parser <Sexpr>)
+
+    (*disj 3)
+
+    done))
+; #####################################################################
+
+  (define <ProperList>
+  (new
+    (*parser (word "("))
+    (*parser <sexprWithSpace>) *star
+    (*parser (word ")"))
+    (*caten 3)
+    (*pack-with (lambda(left_br sexpr right_br) sexpr ))
+    done))  
