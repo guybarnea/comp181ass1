@@ -483,5 +483,21 @@ done))
     (*pack-with (lambda(qq sexpr)  (list 'quasiquote sexpr)))
       done))
 	   
+(define <Unquoted>
+  (new
+    (*parser (word ","))
+    (*parser <Sexpr>) 
+    (*caten 2)
+    (*pack-with (lambda(unquot sexpr) (list 'unquote sexpr) ))
+      done))
+ 
+(define <UnquoteAndSpliced>
+  (new
+    (*parser (word ",@"))
+    (*parser <Sexpr>) 
+    (*caten 2)
+    (*pack-with (lambda(unquot sexpr) (list 'unquote-splicing sexpr)) )
+      done)) 
+	   
 
 
