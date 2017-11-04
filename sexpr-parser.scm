@@ -119,12 +119,11 @@ done))
 
 (define <Char>
   (new
+    (*parser <CharPrefix>)
 
-   (*parser <CharPrefix>)
-
-   (*parser <NamedChar>)
-   (*pack (lambda (str)
-    (cond  ((string-ci=? "lambda" str) (integer->char 955))
+      (*parser <NamedChar>)
+      (*pack (lambda (str)
+      (cond  ((string-ci=? "lambda" str) (integer->char 955))
            ((string-ci=? "newline" str) #\newline)
            ((string-ci=? "nul" str) #\nul)
            ((string-ci=? "page" str) #\page)
@@ -132,29 +131,31 @@ done))
            ((string-ci=? "space" str) #\space)
            ((string-ci=? "tab" str) #\tab)
            (else #f))
-  ))
-   (*parser <HexUnicodeChar>)
-   (*parser <VisibleSimpleChar>)
-   (*disj 3)
+      ))
+
+      (*parser <HexUnicodeChar>) 
+    
+      (*parser <VisibleSimpleChar>)
+      (*parser <VisibleSimpleChar>)
+      *not-followed-by
+    (*disj 3)
 
    (*caten 2)
    (*pack-with (lambda (c n) n))
 
 done))
 
-;################# String ###############
-
 (define <StringHexChar>
   (new
   (*parser (word-ci "\\x"))
-  (*parser <HexChar>)
-  *star
+  (*parser <HexChar>) *star
   (*parser (char #\;))
   (*caten 3)
   (*pack-with (lambda (x hex semicolon)
       (list->hex-number `(,@hex))))
+  (*only-if is-unicode)
   (*pack integer->char)         
-done)) 
+ done)) 
 
 (define <StringMetaChar>
   (new
@@ -209,17 +210,6 @@ done))
   (*pack integer->char)         
 done))
 
-;(define <InfixExtension>
-  ;(new 
-   ; (*parser <InfixPrefixExtensionPrefix>)  
-    ;(*parser <InfixExpression>)
-   ; (*caten 2)
-  ;  (*pack-with (lambda (prefix exp) exp))    
-;done))
-
-
-
-
 (define <SymbolChar>
   (new
    (*parser (range #\0 #\9))
@@ -247,10 +237,6 @@ done))
    (*pack (lambda (lst)
  (list->string lst))) 
 done))
-
-
-
-
 
 
 ;############## Boolean ####################
@@ -381,7 +367,6 @@ done))
    (*disj 2)
 done
 ))
-
 
 
 (define <InfixArgList>
@@ -739,6 +724,6 @@ done))
         (<input_with_spaces> <QuasiQuoted>) 
         (<input_with_spaces> <Unquoted> )
         (<input_with_spaces> <UnquoteAndSpliced> )
-        (<input_with_spaces> <CBName> ) 
-        ;<InfixExtension> 
+        (<input_with_spaces> <CBName> )  
+        (<input_with_spaces> <InfixExtension> ) 
 )) 
