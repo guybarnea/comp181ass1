@@ -444,12 +444,12 @@ done))
 (define <InfixParen>
   (new
    (*parser (word "("))
-   (*delayed (lambda () <InfixExpression>))
+   (*delayed (lambda () (^<skipped-with-infix-comment*> <InfixExpression>)))
    (*parser (word ")"))  
    (*caten 3)
-   (*pack-with (lambda (_ exp ._) (list exp)))
+   (*pack-with (lambda (_ exp ._)  exp))
 
-   (*parser <AtomicInfixValue>)
+   (*parser (^<skipped-with-infix-comment*> <AtomicInfixValue>))
    (*disj 2)
 done
 ))
@@ -474,9 +474,9 @@ done))
   (new
    (*parser <InfixParen>)
 
-    (*parser (word "("))
+    (*parser (^<skipped*> (word "(")))
     (*parser <InfixArgList>)
-    (*parser (word ")"))
+    (*parser (^<skipped*> (word ")")))
     (*caten 3)
     (*pack-with (lambda (_ exp n) exp))
     *star
@@ -496,9 +496,9 @@ done
   (new
    (*parser <InfixFuncall>)
 
-    (*parser (char #\[))
+    (*parser (^<skipped-with-infix-comment*> (char #\[)))
     (*delayed (lambda () <InfixExpression>))   
-    (*parser (char #\]))
+    (*parser (^<skipped-with-infix-comment*> (char #\])))
     (*caten 3)
     (*pack-with (lambda (_ exp n) exp))
     *star
@@ -515,9 +515,9 @@ done
 
 (define <InfixNeg>
     (new 
-      (*parser <InfixArrayGet>)
+      (*parser (^<skipped*> <InfixArrayGet>))
       (*parser (char #\-))
-      (*parser <InfixArrayGet>)
+      (*parser (^<skipped*> <InfixArrayGet>))
       (*caten 2)
       (*pack-with (lambda (_ first) `(- ,first))) 
 
@@ -526,13 +526,13 @@ done))
 
 (define <InfixPow>
  (new
-   (*parser <InfixNeg>)
-   (*parser <PowerSymbol>)
+   (*parser (^<skipped*> <InfixNeg>))
+   (*parser (^<skipped*> <PowerSymbol>))
 ;   (*parser <Number>)
    (*caten 2)
    (*pack-with cons);(lambda (first _ second) first))
    *star
-   (*parser <InfixNeg>)
+   (*parser (^<skipped*> <InfixNeg>))
 
 
       (*caten 2)
@@ -565,14 +565,14 @@ done))
 
 (define <InfixDiv>
  (new
-   (*parser <InfixPow>)
-   (*parser (char #\/))
-   (*parser <InfixPow>)
+   (*parser (^<skipped*> <InfixPow>))
+   (*parser (^<skipped*> (char #\/)))
+   (*parser (^<skipped*> <InfixPow>))
    (*caten 3)
    (*pack-with (lambda (first _ second) `(/ ,first ,second)))
 
-   (*parser (char #\/))
-   (*parser <InfixPow>)
+   (*parser (^<skipped*> (char #\/)))
+   (*parser (^<skipped*> <InfixPow>))
    (*caten 2)
    (*pack-with (lambda (first second) second))
    *star
@@ -584,21 +584,21 @@ done))
     first
    `,(fold-left (lambda (x y) `(/ ,x ,y)) first second))))
 
-   (*parser <InfixPow>)
+   (*parser (^<skipped*> <InfixPow>))
    (*disj 2)
 done
 ))
 
  (define <InfixMul>
  (new
-   (*parser <InfixDiv>)
-   (*parser (char #\*))
-   (*parser <InfixDiv>)
+   (*parser (^<skipped*> <InfixDiv>))
+   (*parser (^<skipped*> (char #\*)))
+   (*parser (^<skipped*> <InfixDiv>))
    (*caten 3)
    (*pack-with (lambda (first _ second) `(* ,first ,second)))
 
-   (*parser (char #\*))
-   (*parser <InfixDiv>)
+   (*parser (^<skipped*> (char #\*)))
+   (*parser (^<skipped*> <InfixDiv>))
    (*caten 2)
    (*pack-with (lambda (first second) second))
    *star
@@ -610,7 +610,7 @@ done
     first
    `,(fold-left (lambda (x y) `(* ,x ,y)) first second))))
 
-   (*parser <InfixDiv>)
+   (*parser (^<skipped*> <InfixDiv>))
    (*disj 2)
 done
 ))
@@ -619,14 +619,14 @@ done
 
 (define <InfixAdd>
   (new
-   (*parser <InfixMul>)
-   (*parser (char #\+))
-   (*parser <InfixMul>)
+   (*parser (^<skipped*> <InfixMul>))
+   (*parser (^<skipped*> (char #\+)))
+   (*parser (^<skipped*> <InfixMul>))
    (*caten 3)
    (*pack-with (lambda (first _ second) `(+ ,first ,second)))
 
-   (*parser (char #\+))
-   (*parser <InfixMul>)
+   (*parser (^<skipped*> (char #\+)))
+   (*parser (^<skipped*> <InfixMul>))
    (*caten 2)
    (*pack-with (lambda (first second) second))
    *star
@@ -638,21 +638,21 @@ done
     first
    `,(fold-left (lambda (x y) `(+ ,x ,y)) first second))))
 
-   (*parser <InfixMul>)
+   (*parser (^<skipped*> <InfixMul>))
    (*disj 2)
 done
 ))
 
 (define <InfixSub>
   (new
-   (*parser <InfixAdd>)
-   (*parser (char #\-))
-   (*parser <InfixAdd>)
+   (*parser (^<skipped*> <InfixAdd>))
+   (*parser (^<skipped*>(char #\-)))
+   (*parser (^<skipped*> <InfixAdd>))
    (*caten 3)
    (*pack-with (lambda (first _ second) `(- ,first ,second)))
 
-   (*parser (char #\-))
-   (*parser <InfixAdd>)
+   (*parser (^<skipped*>(char #\-)))
+   (*parser (^<skipped*> <InfixAdd>))
    (*caten 2)
    (*pack-with (lambda (first second) second))
    *star
@@ -664,7 +664,7 @@ done
     first
    `,(fold-left (lambda (x y) `(- ,x ,y)) first second))))
 
-   (*parser <InfixAdd>)
+   (*parser (^<skipped*> <InfixAdd>))
    (*disj 2)
 done
 ))
@@ -672,7 +672,7 @@ done
 
 (define  <InfixExpression>
 (new
-(*parser <InfixSub>)
+(*parser (^<skipped*> <InfixSub>))
 done)) 
  
  (define <InfixExtension>
@@ -682,7 +682,7 @@ done))
    (*caten 2)
    (*pack-with (lambda (prefix exp) exp))    
 done))
- 
+     ;########end of infix###############################################
 
   (define <ProperList>
   (new
