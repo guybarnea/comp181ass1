@@ -1,48 +1,95 @@
 (load "pc.scm")
 ;path:/users/studs/bsc/2016/alonye/Downloads/comp181ass1-master/
 
+; ################## HELPER PARSERS
+
+(define ^<meta-char>
+  (lambda (str ch)
+    (new (*parser (word str))
+   (*pack (lambda (_) ch))
+   done)))   
+
 (define <whitespace>
   (const
    (lambda (ch)
      (char<=? ch #\space))))
 
+(define <line-comment>
+  (let ((<end-of-line-comment>
+   (new (*parser (char #\newline))
+        (*parser <end-of-input>)
+        (*disj 2)
+        done)))
+    (new (*parser (char #\;))
+   
+   (*parser <any-char>)
+   (*parser <end-of-line-comment>)
+   *diff *star
 
-(define <input_with_spaces>
-  (lambda(<Parser>)
-    (new
-      
-      (*delayed (lambda () <Parser>))
+   (*parser <end-of-line-comment>)
+   (*caten 3)
+   done)))
 
-      (*parser <whitespace>) *star
-      (*delayed (lambda () <Parser>))
-      (*caten 2)
-      (*pack-with (lambda (space sexpr) sexpr))
+(define ^<expression-comment>
+  (lambda (<parser>)
+  (new (*parser (word "#;"))
+       (*delayed <parser>)
+       (*caten 2)
+       done)))
 
-      (*parser <Parser>)
-      (*parser <whitespace>) *star
-      (*caten 2)
-      (*pack-with (lambda (sexpr space) sexpr )) 
+(define <comment>
+  (lambda (<parser>)
+  (disj (^<expression-comment> <parser>)
+  <line-comment>
+)))
 
-    (*disj 3)
-  done)))
+(define <skip>
+  (lambda (<parser>)
+    (disj (<comment> <parser>)
+    <whitespace>
+)))
 
-(define list->symbol
-  (lambda (lst)
-    (string->symbol (list->string lst))
-))
+(define ^^<wrapped-with-comments>
+  (lambda (<wrapper>)
+  (lambda (<comment-parser>)
+    (lambda (<p>)
+      (new (*parser (star (<wrapper> <comment-parser>)))
+     (*parser <p>)
+     (*parser (star (<wrapper> <comment-parser>)))
+     (*caten 3)
+     (*pack-with
+      (lambda (_left e _right) e))
+     done)))))
+     
+(define ^^<wrapped>
+  (lambda (<wrapper>) ;
+    (lambda (<p>) ;gets parser and cleans all the whitspaces
+      (new 
+        (*parser <wrapper>)
+        (*parser <p>)
+        (*parser <wrapper>)
+        (*caten 3)
+        (*pack-with
+         (lambda (_left e _right) e))
+     done)))) 
 
-; Helper function
+(define ^<skipped-with-infix-comment*> ((^^<wrapped-with-comments> <skip>) (lambda () <InfixExpression>)))
+(define ^<skipped-with-sexpr-comment*> ((^^<wrapped-with-comments> <skip>) (lambda () <sexpr>)))
+(define ^<skipped*> (^^<wrapped> (star <whitespace>)))
+
+
+; Helper functions
 ; #####################################################################
 (define <sexprWithSpace>                                                    
   (new
 
     (*delayed (lambda () <Sexpr>))
-    (*parser (char #\space))
+    (*parser (char #\space)) *star
     (*caten 2)
     (*pack-with (lambda (sexpr space) sexpr )) 
 
-    (*parser (char #\space))
-    (*delayed (lambda () <Sexpr>))
+    (*parser (char #\space)) *star
+    (*delayed (lambda () <Sexpr>)) 
     (*caten 2)
     (*pack-with (lambda (space sexpr) sexpr)) 
 
@@ -51,7 +98,27 @@
     (*disj 3)
 
     done))
-; #####################################################################
+
+
+(define <ParserWithSpaces>  
+  (lambda(<parser>)                                                  
+    (new
+
+      (*delayed (lambda () <parser>))
+      (*parser (char #\space)) *star
+      (*caten 2)
+      (*pack-with (lambda (sexpr space) sexpr )) 
+
+      (*parser (char #\space)) *star
+      (*delayed (lambda () <parser>))
+      (*caten 2)
+      (*pack-with (lambda (space sexpr) sexpr)) 
+
+      (*delayed (lambda () <parser>))
+
+      (*disj 3)
+
+      done)))
 
 (define is-unicode
   (lambda (num) 
@@ -67,7 +134,18 @@
   ))
 
 (define list->hex-number (list->number 16))
+
 (define list->decimal-number (list->number 10))
+
+(define list->symbol
+  (lambda (lst)
+    (string->symbol (list->string lst))
+))
+
+; #####################################################
+
+
+;######################### CHAR ##########################
 
 (define <HexChar>
   (new
@@ -75,8 +153,6 @@
    (*parser (range-ci #\a #\f))
    (*disj 2)
   done))
-
-;######### CHAR #############
 
 (define <CharPrefix> (word "#\\"))
 
@@ -93,9 +169,10 @@
    (*pack list->string)
 done))
 
-(define <VisibleSimpleChar> (const (lambda (ch) (char<=? (integer->char 33) ch))))
+(define <VisibleSimpleChar>
+ (const (lambda (ch) (char<=? (integer->char 33) ch))))
 
-; DELETE? IS-UNICODE
+
 (define is-unicode
   (lambda (num) 
     (and
@@ -145,6 +222,8 @@ done))
 
 done))
 
+; ##################### String #########################
+
 (define <StringHexChar>
   (new
   (*parser (word-ci "\\x"))
@@ -179,7 +258,9 @@ done))
     ))
 done))
 
-(define <StringLiteralChar> (const (lambda(ch) (and (not(char=? #\\ ch)) (not(char=? #\" ch))))))
+
+(define <StringLiteralChar> 
+  (const (lambda(ch) (and (not(char=? #\\ ch)) (not(char=? #\" ch))))))
 
 (define <StringChar> 
   (disj <StringHexChar> <StringMetaChar> <StringLiteralChar>))
@@ -210,6 +291,7 @@ done))
   (*pack integer->char)         
 done))
 
+; ################## Symbol ##################
 (define <SymbolChar>
   (new
    (*parser (range #\0 #\9))
@@ -287,7 +369,21 @@ done))
   done))
 
 
-(define <Number> (disj <Fraction> <Integer> ))
+(define <Number> 
+  (disj <Fraction> <Integer> ))
+
+(define <NumberNotFollowedBySymbol>
+  (new
+   (*parser <Number>)
+   (*delayed (lambda () <Symbol>))
+   (*parser (range #\0 #\9))
+   (*parser (char #\/))
+   (*disj 2)
+   *diff
+   *not-followed-by
+  done))
+
+
 
 
 
@@ -598,28 +694,6 @@ done))
 done))
  
 
-; Helper function
-; #####################################################################
-(define <sexprWithSpace>                                                    
-  (new
-
-    (*delayed (lambda () <Sexpr>))
-    (*parser (char #\space))
-    (*caten 2)
-    (*pack-with (lambda (sexpr space) sexpr )) 
-
-    (*parser (char #\space))
-    (*delayed (lambda () <Sexpr>))
-    (*caten 2)
-    (*pack-with (lambda (space sexpr) sexpr)) 
-
-    (*delayed (lambda () <Sexpr>))
-
-    (*disj 3)
-
-    done))
-; #####################################################################
-
   (define <ProperList>
   (new
     (*parser (word "("))
@@ -635,7 +709,7 @@ done))
     (*parser (word "("))
     (*parser <sexprWithSpace>) *plus
     (*parser (word ".") )
-    (*delayed (lambda () <Sexpr>))
+    (*delayed (lambda () <sexprWithSpace>))
     (*parser (word ")"))
     (*caten 5)
     (*pack-with (lambda(left_br sexpr1 dot sexpr2 right_br ) `(,@sexpr1 . ,sexpr2)))
@@ -710,20 +784,21 @@ done))
 (define <CBName>
   (disj <CBNameSyntax1> <CBNameSyntax2>))
 
- (define <Sexpr>
-    (disj 
-        (<input_with_spaces> <Boolean>) 
-        (<input_with_spaces> <Char> )
-        (<input_with_spaces> <String> )
-        (<input_with_spaces> <Number> )
-        (<input_with_spaces> <Symbol>)
-        (<input_with_spaces> <ProperList> )
-        (<input_with_spaces> <ImproperList> )
-        (<input_with_spaces> <Vector>) 
-        (<input_with_spaces> <Quoted>) 
-        (<input_with_spaces> <QuasiQuoted>) 
-        (<input_with_spaces> <Unquoted> )
-        (<input_with_spaces> <UnquoteAndSpliced> )
-        (<input_with_spaces> <CBName> )  
-        (<input_with_spaces> <InfixExtension> ) 
-)) 
+
+(define <Sexpr> 
+  (<ParserWithSpaces> 
+    (disj <Boolean>
+          <Char>
+          <String>
+          <NumberNotFollowedBySymbol>
+          <Symbol>
+          <ProperList>
+          <ImproperList>
+          <Vector>
+          <Quoted>
+          <QuasiQuoted>
+          <Unquoted>
+          <UnquoteAndSpliced>
+          <CBName>
+          <InfixExtension>)))
+
