@@ -46,7 +46,7 @@ The expected result was: ((match (let ((result (- (+ (+ (vector-ref a 0) (* 2 (v
 ; ################## HELPER PARSERS
 
 
-(define <sexpr> <Sexpr>)
+
 
 (define char->symbol
   (lambda (ch)
@@ -128,7 +128,7 @@ The expected result was: ((match (let ((result (- (+ (+ (vector-ref a 0) (* 2 (v
       ))
 
 (define ^<skipped-with-infix-comment*> ((^^<wrapped-with-comments> <skip>) (lambda () <InfixExpression>)))
-(define ^<skipped-with-Sexpr-comment2*> ((^^<wrapped-with-comments> <skip>) (lambda () <Sexpr>)))
+;(define ^<skipped-with-Sexpr-comment2*> ((^^<wrapped-with-comments> <skip>) (lambda () <Sexpr>)))
 (define ^<skipped-with-Sexpr-comment*> ((^^<wrapped-with-comments> <skip>) (lambda () <Sexpr>)))
 (define ^<skipped*> (^^<wrapped> (star <whitespace>)))
 
@@ -646,7 +646,7 @@ done))
 (define <InfixSexprEscape>
   (new
     (*parser (^<skipped*> <InfixPrefixExtensionPrefix>))
-    (*delayed (lambda () (^<skipped-with-Sexpr-comment2*> <Sexpr>)))
+    (*delayed (lambda () (^<skipped-with-Sexpr-comment*> <Sexpr>)))
     (*caten 2)
     (*pack-with (lambda (i w) w))
   done))
@@ -775,7 +775,7 @@ done))
           <InfixExtension>)))
 
 (define ^<skipped-with-sexpr-comment*> ^<skipped-with-Sexpr-comment*>)
-
+(define <sexpr> <Sexpr>)
 
 
 
