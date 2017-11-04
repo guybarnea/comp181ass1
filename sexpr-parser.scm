@@ -271,6 +271,14 @@ done))
 	(not (or (string-ci=? (list->string str) "+")  (string-ci=? (list->string str) "-") (string-ci=? (list->string str) "*") 
 	(string-ci=? (list->string str) "//") (string-ci=? (list->string str) "**") (string-ci=? (list->string str) "^"))))) |#
 
+(define <InfixSexprEscape>
+  (new
+   (*parser <InfixPrefixExtensionPrefix>)
+   (*parser <sexpr>)
+   (*caten 2)
+done
+))
+
 (define <InfixSymbol>
   (new
    (*parser (range #\0 #\9))
@@ -312,9 +320,9 @@ done))
       
       (*parser <InfixSymbol>)
       
-      ;(*delayed (lambda ()  <InfixSexprEscape>)) 
+      (*delayed (lambda ()  <InfixSexprEscape>)) 
       
-      (*disj 2)
+      (*disj 3)
 done))
 
 
@@ -548,19 +556,19 @@ done
 ))
 
 
-(define <InfixSexprEscape>
-  (new
-   (*parser <InfixPrefixExtensionPrefix>)
-   (*parser <InfixSymbol>)
-   (*caten 2)
-done
-))
-
 (define  <InfixExpression>
 (new
 (*parser <InfixSub>)
 done)) 
  
+ (define <InfixExtension>
+  (new 
+   (*parser <InfixPrefixExtensionPrefix>)  
+    (*parser <InfixExpression>)
+   (*caten 2)
+   (*pack-with (lambda (prefix exp) exp))    
+done))
+
 
 
 ; Helper function
