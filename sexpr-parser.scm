@@ -3,11 +3,13 @@
 
 ; ################## HELPER PARSERS
 
-(define ^<meta-char>
+; unused funtions:
+
+#| (define ^<meta-char>
   (lambda (str ch)
     (new (*parser (word str))
    (*pack (lambda (_) ch))
-   done)))   
+   done)))   |# 
 
 (define <whitespace>
   (const
@@ -72,6 +74,16 @@
         (*pack-with
          (lambda (_left e _right) e))
      done)))) 
+
+(define <CleanSpaces>
+  (lambda( <parser>)
+    (new
+      (*parser <whitespace>) *star
+      (*parser <p>)
+      (*parser <whitespace>) *star
+      (*caten 3)
+      *pack-with (lambda (leftSpace expression rightSpace) expression))
+      ))
 
 (define ^<skipped-with-infix-comment*> ((^^<wrapped-with-comments> <skip>) (lambda () <InfixExpression>)))
 (define ^<skipped-with-sexpr-comment*> ((^^<wrapped-with-comments> <skip>) (lambda () <sexpr>)))
@@ -286,7 +298,7 @@ done))
   (new
    (*parser (range #\0 #\9))
    (*parser (range-ci #\a #\z))
-   ;(*pack char-downcase)
+   (*pack char-downcase)
    (*parser (char #\!))
    (*parser (char #\$))
    (*parser (char #\^))
@@ -304,21 +316,19 @@ done))
 
 (define <Symbol> 
   (new 
-   (*parser <SymbolChar>)
-   *plus
+   (*parser <SymbolChar>) *plus
    (*pack (lambda (lst)
- (list->string lst))) 
+ (list->symbol lst))) 
 done))
-
 
 ;############## Boolean ####################
 (define <Boolean> 
   (new
    (*parser (word-ci "#t"))
-   (*pack (lambda (_) #t))
+   (*pack (lambda (bool) #t))
 
    (*parser (word-ci "#f"))
-   (*pack (lambda (_) #f))
+   (*pack (lambda (bool) #f))
 
    (*disj 2)
 done))
@@ -336,12 +346,12 @@ done))
    (*parser (char #\+))
    (*parser <Natural>)
    (*caten 2)
-   (*pack-with (lambda (_ number) number))
+   (*pack-with (lambda (plus number) number))
 
    (*parser (char #\-))
    (*parser <Natural>)
    (*caten 2)
-   (*pack-with (lambda (_ num) (- num)))
+   (*pack-with (lambda (minus num) (- num)))
 
    (*parser <Natural>)
 
@@ -355,7 +365,7 @@ done))
    (*parser <Natural>)
    (*caten 3)
 
-   (*pack-with (lambda (int _ num) (/ int num)))
+   (*pack-with (lambda (int backSlash num) (/ int num)))
   done))
 
 
@@ -372,10 +382,6 @@ done))
    *diff
    *not-followed-by
   done))
-
-
-
-
 
 ;############## InfixExtension ####################
 (define <InfixPrefixExtensionPrefix>
@@ -682,7 +688,8 @@ done))
    (*caten 2)
    (*pack-with (lambda (prefix exp) exp))    
 done))
-     ;########end of infix###############################################
+     ;######## end of infix ###############################################
+ 
 
   (define <ProperList>
   (new
@@ -712,7 +719,7 @@ done))
     (*parser <sexprWithSpace>) *star
     (*parser (word ")"))
     (*caten 3)
-    (*pack-with (lambda(left_br sexpr right_br ) `(#(,@sexpr)) ))
+    (*pack-with (lambda(left_br sexpr right_br ) `#(,@sexpr) ))
       done))
   
      
@@ -721,7 +728,7 @@ done))
     (*parser (word "'"))
     (*delayed (lambda () <Sexpr>))
     (*caten 2)
-    (*pack-with (lambda(quot sexpr) `('(,@sexpr)) ))
+    (*pack-with (lambda(quot sexpr) `'(,@sexpr) ))
       done))
   
      
@@ -791,20 +798,3 @@ done))
           <UnquoteAndSpliced>
           <CBName>
           <InfixExtension>)))
- #| (define <Sexpr>
-    (disj 
-        (<input_with_spaces> <Boolean>) 
-        (<input_with_spaces> <Char> )
-        (<input_with_spaces> <String> )
-        (<input_with_spaces> <NumberNotFollowedBySymbol> )
-        (<input_with_spaces> <Symbol>)
-        (<input_with_spaces> <ProperList> )
-        (<input_with_spaces> <ImproperList> )
-        (<input_with_spaces> <Vector>) 
-        (<input_with_spaces> <Quoted>) 
-        (<input_with_spaces> <QuasiQuoted>) 
-        (<input_with_spaces> <Unquoted> )
-        (<input_with_spaces> <UnquoteAndSpliced> )
-        (<input_with_spaces> <CBName> )  
-        (<input_with_spaces> <InfixExtension> ) 
-))  |#
