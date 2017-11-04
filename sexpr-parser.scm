@@ -86,7 +86,7 @@
       ))
 
 (define ^<skipped-with-infix-comment*> ((^^<wrapped-with-comments> <skip>) (lambda () <InfixExpression>)))
-(define ^<skipped-with-sexpr-comment*> ((^^<wrapped-with-comments> <skip>) (lambda () <sexpr>)))
+(define ^<skipped-with-Sexpr-comment*> ((^^<wrapped-with-comments> <skip>) (lambda () <Sexpr>)))
 (define ^<skipped*> (^^<wrapped> (star <whitespace>)))
 
 
@@ -98,12 +98,12 @@
     (*delayed (lambda () <Sexpr>))
     (*parser (char #\space)) *star
     (*caten 2)
-    (*pack-with (lambda (sexpr space) sexpr )) 
+    (*pack-with (lambda (Sexpr space) Sexpr )) 
 
     (*parser (char #\space)) *star
     (*delayed (lambda () <Sexpr>)) 
     (*caten 2)
-    (*pack-with (lambda (space sexpr) sexpr)) 
+    (*pack-with (lambda (space Sexpr) Sexpr)) 
 
     (*delayed (lambda () <Sexpr>))
 
@@ -119,12 +119,12 @@
       (*delayed (lambda () <parser>))
       (*parser (char #\space)) *star
       (*caten 2)
-      (*pack-with (lambda (sexpr space) sexpr )) 
+      (*pack-with (lambda (Sexpr space) Sexpr )) 
 
       (*parser (char #\space)) *star
       (*delayed (lambda () <parser>))
       (*caten 2)
-      (*pack-with (lambda (space sexpr) sexpr)) 
+      (*pack-with (lambda (space Sexpr) Sexpr)) 
 
       (*delayed (lambda () <parser>))
 
@@ -697,7 +697,7 @@ done))
     (*parser <sexprWithSpace>) *star
     (*parser (word ")"))
     (*caten 3)
-    (*pack-with (lambda(left_br sexpr right_br) sexpr ))
+    (*pack-with (lambda(left_br Sexpr right_br) Sexpr ))
     done)) 
 
      
@@ -719,7 +719,7 @@ done))
     (*parser <sexprWithSpace>) *star
     (*parser (word ")"))
     (*caten 3)
-    (*pack-with (lambda(left_br sexpr right_br ) `#(,@sexpr) ))
+    (*pack-with (lambda(left_br Sexpr right_br ) `#(,@Sexpr) ))
       done))
   
      
@@ -728,7 +728,7 @@ done))
     (*parser (word "'"))
     (*delayed (lambda () <Sexpr>))
     (*caten 2)
-    (*pack-with (lambda(quot sexpr) `'(,@sexpr) ))
+    (*pack-with (lambda(quot Sexpr) `'(,@Sexpr) ))
       done))
   
      
@@ -737,16 +737,18 @@ done))
     (*parser (word "`"))
     (*delayed (lambda () <Sexpr>))
     (*caten 2)
-    (*pack-with (lambda(qq sexpr)  (list 'quasiquote sexpr)))
+    (*pack-with (lambda(qq Sexpr)  (list 'quasiquote Sexpr)))
       done))
   
      
 (define <Unquoted>
   (new
     (*parser (word ","))
+    (*parser (word "@"))
+    *not-followed-by
     (*delayed (lambda () <Sexpr>)) 
     (*caten 2)
-    (*pack-with (lambda(unquot sexpr) (list 'unquote sexpr) ))
+    (*pack-with (lambda(unquot Sexpr) (list 'unquote Sexpr) ))
       done))
  
      
@@ -755,7 +757,7 @@ done))
     (*parser (word ",@"))
     (*delayed (lambda () <Sexpr>)) 
     (*caten 2)
-    (*pack-with (lambda(unquot sexpr) (list 'unquote-splicing sexpr)) )
+    (*pack-with (lambda(unquot Sexpr) (list 'unquote-splicing Sexpr)) )
       done)) 
      
      
@@ -764,7 +766,7 @@ done))
     (*parser (word "@"))
     (*delayed (lambda () <Sexpr>))
     (*caten 2)
-    (*pack-with (lambda(shtrudel sexpr) (list 'cbname sexpr)  ))
+    (*pack-with (lambda(shtrudel Sexpr) (list 'cbname Sexpr)  ))
       done)) 
      
      
@@ -774,7 +776,7 @@ done))
     (*delayed (lambda () <Sexpr>))
     (*parser (word "}"))
     (*caten 3)
-    (*pack-with (lambda(left_br sexpr right_br) (list 'cbname sexpr) ))
+    (*pack-with (lambda(left_br Sexpr right_br) (list 'cbname Sexpr) ))
     done))  
 
      
@@ -783,11 +785,11 @@ done))
 
 
 (define <Sexpr> 
-  (^<skipped-with-sexpr-comment*>
+  (^<skipped-with-Sexpr-comment*>
     (disj <Boolean>
           <Char>
-          <String>
           <NumberNotFollowedBySymbol>
+          <String>
           <Symbol>
           <ProperList>
           <ImproperList>
@@ -798,3 +800,7 @@ done))
           <UnquoteAndSpliced>
           <CBName>
           <InfixExtension>)))
+#|
+> (test-string <Sexpr> "#%f(x ,#%@#%x + 1)")
+Failure, Test result is: ((match (f x ((# %) (cbname (+ x 1))))) (remaining ))
+The expected result was: ((match (f x (cbname (+ x 1)))) (remaining ))|#
