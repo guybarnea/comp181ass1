@@ -1,12 +1,57 @@
 (load "pc.scm")
-
-
-;(define <sexpr>
-;    (disj <Boolean> <Char> <String> <Number> <Symbol>
-;     <ProperList> <ImproperList> <Vector> <Quoted> <QuasiQuoted> <Unquoted> 
-;   <UnquoteAndSpliced> <CBName>  <InfixExtension> 
-;))
 ;path:/users/studs/bsc/2016/alonye/Downloads/comp181ass1-master/
+
+(define <whitespace>
+  (const
+   (lambda (ch)
+     (char<=? ch #\space))))
+
+
+(define <input_with_spaces>
+  (lambda(<Parser>)
+    (new
+      
+      (*delayed (lambda () <Parser>))
+
+      (*parser <whitespace>) *star
+      (*delayed (lambda () <Parser>))
+      (*caten 2)
+      (*pack-with (lambda (space sexpr) sexpr))
+
+      (*parser <Parser>)
+      (*parser <whitespace>) *star
+      (*caten 2)
+      (*pack-with (lambda (sexpr space) sexpr )) 
+
+    (*disj 3)
+  done)))
+
+(define list->symbol
+  (lambda (lst)
+    (string->symbol (list->string lst))
+))
+
+; Helper function
+; #####################################################################
+(define <sexprWithSpace>                                                    
+  (new
+
+    (*delayed (lambda () <Sexpr>))
+    (*parser (char #\space))
+    (*caten 2)
+    (*pack-with (lambda (sexpr space) sexpr )) 
+
+    (*parser (char #\space))
+    (*delayed (lambda () <Sexpr>))
+    (*caten 2)
+    (*pack-with (lambda (space sexpr) sexpr)) 
+
+    (*delayed (lambda () <Sexpr>))
+
+    (*disj 3)
+
+    done))
+; #####################################################################
 
 (define is-unicode
   (lambda (num) 
@@ -23,11 +68,6 @@
 
 (define list->hex-number (list->number 16))
 (define list->decimal-number (list->number 10))
-
-(define list->symbol
-  (lambda (lst)
-    (string->symbol (list->string lst))
-))
 
 (define <HexChar>
   (new
@@ -64,7 +104,7 @@ done))
 ))
 
 
-(define <HexUnicodeChar> ;;learn about this parser
+(define <HexUnicodeChar> 
   (new
   (*parser (char-ci #\x))
   (*parser <HexChar>) *plus
@@ -72,12 +112,14 @@ done))
 
  (*pack-with (lambda (first rest)
    (list->hex-number `(,@rest))))
+  (*only-if is-unicode)
   (*pack integer->char)  
 done))
 
 
 (define <Char>
   (new
+
    (*parser <CharPrefix>)
 
    (*parser <NamedChar>)
@@ -97,6 +139,7 @@ done))
 
    (*caten 2)
    (*pack-with (lambda (c n) n))
+
 done))
 
 ;################# String ###############
@@ -127,10 +170,10 @@ done))
       (cond 
       ((string-ci=? "\\\\" str) #\\)
     ((string-ci=? "\\\"" str) #\")
-    ((string-ci=? "\\t" str) #\t)
-    ((string-ci=? "\\f" str) #\f)
-      ((string-ci=? "\\n" str) #\n)
-      ((string-ci=? "\\r" str) #\r)
+    ((string-ci=? "\\t" str) #\tab)
+    ((string-ci=? "\\f" str) #\page)
+      ((string-ci=? "\\n" str) #\newline)
+      ((string-ci=? "\\r" str) #\return)
       (else #f)))
     ))
 done))
@@ -267,14 +310,14 @@ done))
 (disj (word "##") (word "#%")))
 
 #| (define notInfixSymbol
-	(lambda (str)
-	(not (or (string-ci=? (list->string str) "+")  (string-ci=? (list->string str) "-") (string-ci=? (list->string str) "*") 
-	(string-ci=? (list->string str) "//") (string-ci=? (list->string str) "**") (string-ci=? (list->string str) "^"))))) |#
+  (lambda (str)
+  (not (or (string-ci=? (list->string str) "+")  (string-ci=? (list->string str) "-") (string-ci=? (list->string str) "*") 
+  (string-ci=? (list->string str) "//") (string-ci=? (list->string str) "**") (string-ci=? (list->string str) "^"))))) |#
 
 (define <InfixSexprEscape>
   (new
    (*parser <InfixPrefixExtensionPrefix>)
-   (*parser <sexpr>)
+   (*delayed (lambda () <Sexpr>))
    (*caten 2)
 done
 ))
@@ -307,7 +350,7 @@ done
    (*parser (word "^"))
    (*disj 2)
    (*pack (lambda (word)
-   	(list->string word)))
+    (list->string word)))
 done))
 
 (define <AtomicInfixValue>
@@ -568,8 +611,7 @@ done))
    (*caten 2)
    (*pack-with (lambda (prefix exp) exp))    
 done))
-
-
+ 
 
 ; Helper function
 ; #####################################################################
@@ -682,3 +724,21 @@ done))
      
 (define <CBName>
   (disj <CBNameSyntax1> <CBNameSyntax2>))
+
+ (define <Sexpr>
+    (disj 
+        (<input_with_spaces> <Boolean>) 
+        (<input_with_spaces> <Char> )
+        (<input_with_spaces> <String> )
+        (<input_with_spaces> <Number> )
+        (<input_with_spaces> <Symbol>)
+        (<input_with_spaces> <ProperList> )
+        (<input_with_spaces> <ImproperList> )
+        (<input_with_spaces> <Vector>) 
+        (<input_with_spaces> <Quoted>) 
+        (<input_with_spaces> <QuasiQuoted>) 
+        (<input_with_spaces> <Unquoted> )
+        (<input_with_spaces> <UnquoteAndSpliced> )
+        (<input_with_spaces> <CBName> ) 
+        ;<InfixExtension> 
+)) 
