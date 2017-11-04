@@ -1,15 +1,57 @@
 (load "pc.scm")
 ;path:/users/studs/bsc/2016/alonye/Downloads/comp181ass1-master/
 
+;things to solve:
+#|   > (test-string <Sexpr> "#\tabs")
+Failure, Test result is: ((match  ) (remaining s))
+The expected result was: (failed with report:)
+
+> (test-string <Sexpr> " 13/")
+Failure, Test result is: ((match 13) (remaining /))
+The expected result was: ((match 13/) (remaining ))
+
+> (test-string <Sexpr> " 13/ ")
+Failure, Test result is: ((match 13) (remaining / ))
+The expected result was: ((match 13/) (remaining ))
+> (test-string <Sexpr> "( let ((x 2)
+    (y 8))
+    + x y   )")
+Failure, Test result is: ((match (let ((x 2) (y 8)) + x y)) (remaining ))
+The expected result was: ((match (+ (+ 9 (expt 4 3)) 6)) (remaining ))
+
+> (test-string <Sexpr> "#()")
+Failure, Test result is: ((match #()) (remaining ))
+The expected result was: ((match (#())) (remaining ))
+
+> (test-string <Sexpr> "#(1 2)")
+Failure, Test result is: ((match #(1 2)) (remaining ))
+The expected result was: ((match (#(1 2))) (remaining ))
+
+> (test-string <Sexpr> "#((a b) #(1) 3)")
+Failure, Test result is: ((match #((a b) #(1) 3)) (remaining ))
+The expected result was: ((match (#((a b) (#(1)) 3))) (remaining ))
+
+> (test-string <Sexpr> "`(the answer is: ##2 * 3 + 4 * 5)")
+Failure, Test result is: (failed with report:)
+The expected result was: ((match `(the answer is: (+ (* 2 3) (* 4 5)))) (remaining ))
+
+> (test-string <Sexpr> " (let ((result ##a[0] + 2 * a[1] + 3 ^ a[2] - a[3] * b[i][j][i + j]))result)")
+Failure, Test result is: ((match (let ((result (- (+ (+ (vector-ref a 0) (* 2 (vector-ref a 1))) (expt 3 (vector-ref a 2))) (* (vector-ref a 3) (vector-ref (vector-ref (vector-ref b i) j) (+ i j)))))) result)) (remaining ))
+The expected result was: ((match (let ((result (- (+ (+ (vector-ref a 0) (* 2 (vector-ref a 1))) (expt 3 (vector-ref a 2))) (* (vector-ref a 3) (vector-ref (vector-ref (vector-ref b i) j) (+ i j)))))) result) (remaining )))
+
+
+ |#
+
+
 ; ################## HELPER PARSERS
 
-; unused funtions:
 
-#| (define ^<meta-char>
-  (lambda (str ch)
-    (new (*parser (word str))
-   (*pack (lambda (_) ch))
-   done)))   |# 
+(define <sexpr> <Sexpr>)
+
+(define char->symbol
+  (lambda (ch)
+    (string->symbol (string ch))
+))
 
 (define <whitespace>
   (const
@@ -38,11 +80,6 @@
        (*delayed <parser>)
        (*caten 2)
        done)))
-    
-(define char->symbol
-  (lambda (c)
-    (string->symbol (string c))
-))
 
 (define <comment>
   (lambda (<parser>)
@@ -91,7 +128,7 @@
       ))
 
 (define ^<skipped-with-infix-comment*> ((^^<wrapped-with-comments> <skip>) (lambda () <InfixExpression>)))
-(define ^<skipped-with-Sexpr-comment*> ((^^<wrapped-with-comments> <skip>) (lambda () <Sexpr>)))
+;(define ^<skipped-with-Sexpr-comment*> ((^^<wrapped-with-comments> <skip>) (lambda () <Sexpr>)))
 (define ^<skipped*> (^^<wrapped> (star <whitespace>)))
 
 
@@ -712,7 +749,10 @@ done))
           <UnquoteAndSpliced>
           <CBName>
           <InfixExtension>)))
-#|
-> (test-string <Sexpr> "#%f(x ,#%@#%x + 1)")
-Failure, Test result is: ((match (f x ((# %) (cbname (+ x 1))))) (remaining ))
-The expected result was: ((match (f x (cbname (+ x 1)))) (remaining ))|#
+
+(define ^<skipped-with-sexpr-comment*> ^<skipped-with-Sexpr-comment*>)
+
+
+
+
+
