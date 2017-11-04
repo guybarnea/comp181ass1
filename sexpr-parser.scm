@@ -234,7 +234,7 @@ done))
       (list->hex-number `(,@hex))))
   (*only-if is-unicode)
   (*pack integer->char)         
- done)) 
+ done))
 
 (define <StringMetaChar>
   (new
@@ -259,11 +259,12 @@ done))
 done))
 
 
-(define <StringLiteralChar> 
+(define <StringLiteralChar>  
   (const (lambda(ch) (and (not(char=? #\\ ch)) (not(char=? #\" ch))))))
 
 (define <StringChar> 
   (disj <StringHexChar> <StringMetaChar> <StringLiteralChar>))
+
 
 (define <String>
   (new
@@ -278,18 +279,7 @@ done))
 (list->string str)))
 done)) 
 
-(define <StringHexChar>
-  (new
-  (*parser (word-ci "\\x"))
-  (*parser <HexChar>)
-  *star
-  (*parser (char #\;))
-  (*caten 3)
-  (*pack-with (lambda (x hex semicolon)
-      (list->hex-number `(,@hex))))
-  (*only-if is-unicode)
-  (*pack integer->char)         
-done))
+
 
 ; ################## Symbol ##################
 (define <SymbolChar>
@@ -786,7 +776,7 @@ done))
 
 
 (define <Sexpr> 
-  (<ParserWithSpaces> 
+  (^<skipped-with-sexpr-comment*>
     (disj <Boolean>
           <Char>
           <String>
@@ -801,4 +791,20 @@ done))
           <UnquoteAndSpliced>
           <CBName>
           <InfixExtension>)))
-
+ #| (define <Sexpr>
+    (disj 
+        (<input_with_spaces> <Boolean>) 
+        (<input_with_spaces> <Char> )
+        (<input_with_spaces> <String> )
+        (<input_with_spaces> <NumberNotFollowedBySymbol> )
+        (<input_with_spaces> <Symbol>)
+        (<input_with_spaces> <ProperList> )
+        (<input_with_spaces> <ImproperList> )
+        (<input_with_spaces> <Vector>) 
+        (<input_with_spaces> <Quoted>) 
+        (<input_with_spaces> <QuasiQuoted>) 
+        (<input_with_spaces> <Unquoted> )
+        (<input_with_spaces> <UnquoteAndSpliced> )
+        (<input_with_spaces> <CBName> )  
+        (<input_with_spaces> <InfixExtension> ) 
+))  |#
