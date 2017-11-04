@@ -128,7 +128,7 @@ The expected result was: ((match (let ((result (- (+ (+ (vector-ref a 0) (* 2 (v
       ))
 
 (define ^<skipped-with-infix-comment*> ((^^<wrapped-with-comments> <skip>) (lambda () <InfixExpression>)))
-(define ^<skipped-with-Sexpr-comment*> ((^^<wrapped-with-comments> <skip>) (lambda () <Sexpr>)))
+(define ^<skipped-with-Sexpr-comment2*> ((^^<wrapped-with-comments> <skip>) (lambda () <Sexpr>)))
 (define ^<skipped-with-Sexpr-comment*> ((^^<wrapped-with-comments> <skip>) (lambda () <Sexpr>)))
 (define ^<skipped*> (^^<wrapped> (star <whitespace>)))
 
