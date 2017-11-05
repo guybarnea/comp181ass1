@@ -93,11 +93,19 @@ The expected result was: ((match (let ((result (- (+ (+ (vector-ref a 0) (* 2 (v
     <whitespace>
 )))
 
-
-(define <removeSpacesAndComments>
+(define <remSpacesCommentsinfix>
     (lambda (<p>)
-     (new 
-     (*parser (star (<skip> (lambda () <Sexpr>))))
+      (new (*parser (star (<skip> (lambda () <InfixExpression>))))
+     (*parser <p>)
+     (*parser (star (<skip> (lambda () <InfixExpression>))))
+     (*caten 3)
+     (*pack-with
+      (lambda (_left e _right) e))
+     done)))
+
+(define <remSpacesCommentsSexpr>
+    (lambda (<p>)
+      (new (*parser (star (<skip> (lambda () <Sexpr>))))
      (*parser <p>)
      (*parser (star (<skip> (lambda () <Sexpr>))))
      (*caten 3)
@@ -115,6 +123,22 @@ The expected result was: ((match (let ((result (- (+ (+ (vector-ref a 0) (* 2 (v
         (*pack-with
          (lambda (_left e _right) e))
      done)))
+
+(define <CleanSpaces>
+  (lambda( <parser>)
+    (new
+      (*parser <whitespace>) *star
+      (*parser <p>)
+      (*parser <whitespace>) *star
+      (*caten 3)
+      *pack-with (lambda (leftSpace expression rightSpace) expression))
+      ))
+
+;(define <remSpacesCommentsinfix> ((^^<wrapped-with-comments> <skip>) (lambda () <InfixExpression>)))
+;(define <remSpacesCommentsinfix> ((^^<wrapped-with-comments> <skip>) (lambda () <InfixExpression>)))
+;(define <remSpacesCommentsSexpr> ((^^<wrapped-with-comments> <skip>) (lambda () <Sexpr>)))
+;(define <removeSpaces> (^^<wrapped> (star <whitespace>)))
+
 
 ; Helper functions
 ; #####################################################################
@@ -449,8 +473,8 @@ done))
     
 (define <PowerSymbol>
   (new
-    (*parser (<removeSpaces> (char #\^)))
-    (*parser (<removeSpaces> (word "**")))  
+    (*parser (<remSpacesCommentsinfix> (char #\^)))
+    (*parser (<remSpacesCommentsinfix> (word "**")))  
     (*disj 2)  
     (*pack (lambda (_) 'expt))
    done))
@@ -458,12 +482,12 @@ done))
 (define <InfixParen>
   (new 
     (*parser (char #\())
-    (*delayed (lambda () (<removeSpaces> <InfixExpression>)))
+    (*delayed (lambda () (<remSpacesCommentsinfix> ^<InfixExpression>)))
     (*parser (char #\)))
     (*caten 3)
-    (*pack-with (lambda (s1 i s2) i))   
+    (*pack-with (lambda (p1 exp p2) exp))   
             
-    (*parser (<removeSpaces> <AtomicInfixValue>))
+    (*parser (<remSpacesCommentsinfix> <AtomicInfixValue>))
     (*disj 2)
   done)) 
 
@@ -482,33 +506,33 @@ done))
     (*disj 2)
    done))  
      
-(define <InfixArrayGetFuncall>
+(define <InfixArrayFuncall>
   (new           
     (*parser <InfixParen>)
     
-    (*parser (<removeSpaces> (char #\[)))
+    (*parser (<remSpacesCommentsinfix> (char #\[)))
     (*delayed (lambda () <InfixExpression>))
-    (*parser (<removeSpaces> (char #\])))
+    (*parser (<remSpacesCommentsinfix> (char #\])))
     (*caten 3)
-    (*pack-with (lambda (i1 s1 i2) (cons 'array-get s1)))
+    (*pack-with (lambda (op1 exp op2) (cons 'array exp)))
     
     (*parser (<removeSpaces> (char #\()))
     (*parser <InfixArgList>)
     (*parser (<removeSpaces> (char #\))))
     (*caten 3)
-    (*pack-with (lambda (s1 args s2) (cons 'funcall args))) 
+    (*pack-with (lambda (op1 args op2) (cons 'funcall args))) 
     
     (*disj 2)
     *star
     
     (*caten 2)
-    (*pack-with (lambda (s1 s2)
-  (if (null? s2)
-  s1
+    (*pack-with (lambda (first rest)
+    (if (null? rest)
+    first
         `,(fold-left (lambda (x y) 
         (if (equal? (car y) 'funcall)
         `(,x ,@(cdr y))
-        `(vector-ref ,x ,(cdr y)))) s1 s2))))
+        `(vector-ref ,x ,(cdr y)))) first rest))))
         
     (*parser <InfixParen>)
     (*disj 2)
@@ -516,10 +540,10 @@ done))
 
 (define <InfixNeg>
     (new
-      (*parser (<removeSpaces> <InfixArrayGetFuncall>))
+      (*parser (<removeSpaces> <InfixArrayFuncall>))
       
       (*parser (char #\-))
-      (*parser (<removeSpaces> <InfixArrayGetFuncall>))
+      (*parser (<removeSpaces> <InfixArrayFuncall>))
       (*caten 2)
       (*pack-with (lambda (sign exp) `(- ,exp)))
       
@@ -537,9 +561,9 @@ done))
       (*pack-with cons)
       *star
       
-      (*parser (<removeSpaces> <InfixNeg>))      
-      
+      (*parser (<removeSpaces> <InfixNeg>))       
       (*caten 2)
+
       (*pack-with (lambda (rest last) 
         (if (null? rest)
           last
@@ -547,31 +571,30 @@ done))
         `,(fold-left (lambda (x y) `(,(cdr y) ,(car y) ,x)) last (reverse rest))))))
      done)) 
 
-
-(define <PlusMinus>
+(define <AddSub>
   (new
-    (*parser (<removeSpacesAndComments>(char #\+)))
-    (*parser (<removeSpacesAndComments>(char #\-)))
+    (*parser (<remSpacesCommentsinfix> (char #\+)))
+    (*parser (<remSpacesCommentsinfix> (char #\-)))
     (*disj 2)
     (*pack char->symbol)    
    done))
    
 (define <MultDiv>
   (new
-    (*parser (<removeSpacesAndComments>(char #\*)))
-    (*parser (<removeSpacesAndComments>(char #\/)))
+    (*parser (<remSpacesCommentsinfix> (char #\*)))
+    (*parser (<remSpacesCommentsinfix> (char #\/)))
     (*disj 2)
     (*pack char->symbol)
    done))  
 
 
-(define <InfixMulDiv>
+(define <InfixMultDiv>
     (new
       (*parser (<removeSpaces> <InfixPow>))
       (*parser (<removeSpaces> <MultDiv>))
       (*parser (<removeSpaces> <InfixPow>))
       (*caten 3)
-      (*pack-with (lambda (n1 sign n2) `(,sign ,n1 ,n2)))
+      (*pack-with (lambda (left sign right) `(,sign ,left ,right)))
         
       (*parser (<removeSpaces> <MultDiv>))      
       (*parser (<removeSpaces> <InfixPow>))
@@ -580,10 +603,10 @@ done))
       *star
       
       (*caten 2)
-      (*pack-with (lambda (n1 n2) 
-  (if (null? n2)
-    n1
-  `,(fold-left (lambda (x y) `(,(car y) ,x ,(cdr y))) n1 n2))))
+      (*pack-with (lambda (first rest) 
+      (if (null? rest)
+      first
+    `,(fold-left (lambda (x y) `(,(car y) ,x ,(cdr y))) first rest))))
       
       (*parser (<removeSpaces> <InfixPow>))
       (*disj 2)  
@@ -593,14 +616,14 @@ done))
   
 (define <InfixAddSub>
     (new
-      (*parser (<removeSpaces> <InfixMulDiv>))
-      (*parser (<removeSpaces> <PlusMinus>))
-      (*parser (<removeSpaces> <InfixMulDiv>))
+      (*parser (<removeSpaces> <InfixMultDiv>))
+      (*parser (<removeSpaces> <AddSub>))
+      (*parser (<removeSpaces> <InfixMultDiv>))
       (*caten 3)
       (*pack-with (lambda (n1 sign n2) `(,sign ,n1 ,n2)))
         
-      (*parser (<removeSpaces> <PlusMinus>))      
-      (*parser (<removeSpaces> <InfixMulDiv>))
+      (*parser (<removeSpaces> <AddSub>))      
+      (*parser (<removeSpaces> <InfixMultDiv>))
       (*caten 2)
       (*pack-with cons)
       *star
@@ -611,24 +634,30 @@ done))
     n1
   `,(fold-left (lambda (x y) `(,(car y) ,x ,(cdr y))) n1 n2))))
       
-      (*parser (<removeSpaces> <InfixMulDiv>))
+      (*parser (<removeSpaces> <InfixMultDiv>))
       (*disj 2)  
 done))
-  
-  
+     
+   
 
-(define <InfixExpression>
+
+
+(define ^<InfixExpression>
   (new
     (*parser (<removeSpaces> <InfixAddSub>))
   done))
-
+  
+  
 (define <InfixSexprEscape>
   (new
     (*parser (<removeSpaces> <InfixPrefixExtensionPrefix>))
-    (*delayed (lambda () (<removeSpacesAndComments> <Sexpr>)))
+    (*delayed (lambda () (<remSpacesCommentsSexpr> <Sexpr>)))
     (*caten 2)
-    (*pack-with (lambda (i w) w))
-  done))   
+    (*pack-with (lambda (_ sexp) sexp))
+  done))
+    
+(define <InfixExpression> (<remSpacesCommentsinfix> ^<InfixExpression>))
+   
    
 (define <InfixExtension>
   (new 
@@ -734,7 +763,7 @@ done))
 
 
 (define <Sexpr> 
-  (<removeSpacesAndComments>
+  (<remSpacesCommentsSexpr>
     (disj <Boolean>
           <Char>
           <NumberNotFollowedBySymbol>
@@ -750,7 +779,7 @@ done))
           <CBName>
           <InfixExtension>)))
 
-(define <removeSpacesAndComments> <removeSpacesAndComments>)
+(define <remSpacesCommentsSexpr> <remSpacesCommentsSexpr>)
 (define <sexpr> <Sexpr>)
 
 
