@@ -6,13 +6,6 @@
 Failure, Test result is: ((match  ) (remaining s))
 The expected result was: (failed with report:)
 
-> (test-string <Sexpr> " 13/")
-Failure, Test result is: ((match 13) (remaining /))
-The expected result was: ((match 13/) (remaining ))
-
-> (test-string <Sexpr> " 13/ ")
-Failure, Test result is: ((match 13) (remaining / ))
-The expected result was: ((match 13/) (remaining ))
 > (test-string <Sexpr> "( let ((x 2)
     (y 8))
     + x y   )")
@@ -45,9 +38,6 @@ The expected result was: ((match (let ((result (- (+ (+ (vector-ref a 0) (* 2 (v
 
 ; ################## HELPER PARSERS
 
-
-
-
 (define char->symbol
   (lambda (ch)
     (string->symbol (string ch))
@@ -58,8 +48,8 @@ The expected result was: ((match (let ((result (- (+ (+ (vector-ref a 0) (* 2 (v
    (lambda (ch)
      (char<=? ch #\space))))
 
-(define <line-comment>
-  (let ((<end-of-line-comment>
+(define <lineComment>
+  (let ((<CommentsAfterNewline>
    (new (*parser (char #\newline))
         (*parser <end-of-input>)
         (*disj 2)
@@ -67,14 +57,14 @@ The expected result was: ((match (let ((result (- (+ (+ (vector-ref a 0) (* 2 (v
     (new (*parser (char #\;))
    
    (*parser <any-char>)
-   (*parser <end-of-line-comment>)
+   (*parser <CommentsAfterNewline>)
    *diff *star
 
-   (*parser <end-of-line-comment>)
+   (*parser <CommentsAfterNewline>)
    (*caten 3)
    done)))
 
-(define ^<expression-comment>
+(define <parserAfterComment>
   (lambda (<parser>)
   (new (*parser (word "#;"))
        (*delayed <parser>)
@@ -83,21 +73,26 @@ The expected result was: ((match (let ((result (- (+ (+ (vector-ref a 0) (* 2 (v
 
 (define <comment>
   (lambda (<parser>)
-  (disj (^<expression-comment> <parser>)
-  <line-comment>
-)))
+    (new
+      (*parser (<parserAfterComment> <parser>))
+      (*parser <lineComment>)
+      (*disj 2)
+      done)))
 
-(define <skip>
+
+(define <endWithWhitespace>
   (lambda (<parser>)
-    (disj (<comment> <parser>)
-    <whitespace>
-)))
+    (new
+      (*parser (<comment> <parser>))
+      (*parser <whitespace>)
+      (*disj 2)
+  done)))
 
 (define <remSpacesCommentsinfix>
     (lambda (<p>)
-      (new (*parser (star (<skip> (lambda () <InfixExpression>))))
+      (new (*parser (star (<endWithWhitespace> (lambda () <InfixExpression>))))
      (*parser <p>)
-     (*parser (star (<skip> (lambda () <InfixExpression>))))
+     (*parser (star (<endWithWhitespace> (lambda () <InfixExpression>))))
      (*caten 3)
      (*pack-with
       (lambda (_left e _right) e))
@@ -105,9 +100,9 @@ The expected result was: ((match (let ((result (- (+ (+ (vector-ref a 0) (* 2 (v
 
 (define <remSpacesCommentsSexpr>
     (lambda (<p>)
-      (new (*parser (star (<skip> (lambda () <Sexpr>))))
+      (new (*parser (star (<endWithWhitespace> (lambda () <Sexpr>))))
      (*parser <p>)
-     (*parser (star (<skip> (lambda () <Sexpr>))))
+     (*parser (star (<endWithWhitespace> (lambda () <Sexpr>))))
      (*caten 3)
      (*pack-with
       (lambda (_left e _right) e))
@@ -134,10 +129,6 @@ The expected result was: ((match (let ((result (- (+ (+ (vector-ref a 0) (* 2 (v
       *pack-with (lambda (leftSpace expression rightSpace) expression))
       ))
 
-;(define <remSpacesCommentsinfix> ((^^<wrapped-with-comments> <skip>) (lambda () <InfixExpression>)))
-;(define <remSpacesCommentsinfix> ((^^<wrapped-with-comments> <skip>) (lambda () <InfixExpression>)))
-;(define <remSpacesCommentsSexpr> ((^^<wrapped-with-comments> <skip>) (lambda () <Sexpr>)))
-;(define <removeSpaces> (^^<wrapped> (star <whitespace>)))
 
 
 ; Helper functions
@@ -256,33 +247,39 @@ done))
 done))
 
 
-(define <Char>
+ (define <Char>
   (new
-    (*parser <CharPrefix>)
+   (*parser <CharPrefix>)
+   
+   (*parser <VisibleSimpleChar>)
+   (*parser <VisibleSimpleChar>)
+   (*parser (char #\]))
+   (*parser (char #\[))
+   (*parser (char #\)))
+   (*parser (char #\())
+   (*disj 4)
+   *diff
+   *not-followed-by
 
-      (*parser <NamedChar>)
-      (*pack (lambda (str)
-      (cond  ((string-ci=? "lambda" str) (integer->char 955))
-           ((string-ci=? "newline" str) #\newline)
-           ((string-ci=? "nul" str) #\nul)
-           ((string-ci=? "page" str) #\page)
-           ((string-ci=? "return" str) #\return)
-           ((string-ci=? "space" str) #\space)
-           ((string-ci=? "tab" str) #\tab)
-           (else #f))
-      ))
+   (*parser <NamedChar>)
+   (*pack (lambda (namedChar) 
+    ((lambda (str)
+    (cond ((string-ci=? "lambda" str) (integer->char 955))
+          ((string-ci=? "newline" str) #\newline)
+          ((string-ci=? "nul" str) #\nul)
+          ((string-ci=? "page" str) #\page)
+          ((string-ci=? "return" str) #\return)
+          ((string-ci=? "space" str) #\space)
+          ((string-ci=? "tab" str) #\tab)
+          (else #f))
+    ) namedChar)))
 
-      (*parser <HexUnicodeChar>) 
-    
-      (*parser <VisibleSimpleChar>)
-      (*parser <VisibleSimpleChar>)
-      *not-followed-by
-    (*disj 3)
+   (*parser <HexUnicodeChar>)
+   (*disj 3)
 
    (*caten 2)
-   (*pack-with (lambda (c n) n))
-
-done))
+   (*pack-with (lambda (prefix ch) ch))
+  done)) 
 
 ; ##################### String #########################
 
@@ -292,8 +289,8 @@ done))
   (*parser <HexChar>) *star
   (*parser (char #\;))
   (*caten 3)
-  (*pack-with (lambda (x hex semicolon)
-      (list->hex-number `(,@hex))))
+  (*pack-with (lambda (x hexChar semicolon)
+      (list->hex-number `(,@hexChar))))
   (*only-if is-unicode)
   (*pack integer->char)         
  done))
@@ -324,9 +321,17 @@ done))
 (define <StringLiteralChar>  
   (const (lambda(ch) (and (not(char=? #\\ ch)) (not(char=? #\" ch))))))
 
-(define <StringChar> 
+#| (define <StringChar> 
   (disj <StringHexChar> <StringMetaChar> <StringLiteralChar>))
+ |#
 
+ (define <StringChar> 
+  (new 
+    (*parser <StringHexChar>)
+    (*parser <StringMetaChar>)
+    (*parser <StringLiteralChar>)
+    (*disj 3)
+  done))
 
 (define <String>
   (new
@@ -337,7 +342,7 @@ done))
    *star
    (*parser (char #\"))
    (*caten 3)
-   (*pack-with (lambda (open str close)
+   (*pack-with (lambda (leftGershaym str rightGershaym)
 (list->string str)))
 done)) 
 
@@ -419,8 +424,13 @@ done))
   done))
 
 
-(define <Number> 
-  (disj <Fraction> <Integer> ))
+(define <Number>
+  (new
+    (*parser <Fraction>)
+    (*parser <Integer>)
+    (*disj 2)
+  done))
+
 
 (define <NumberNotFollowedBySymbol>
   (new
@@ -476,7 +486,7 @@ done))
     (*parser (<remSpacesCommentsinfix> (char #\^)))
     (*parser (<remSpacesCommentsinfix> (word "**")))  
     (*disj 2)  
-    (*pack (lambda (_) 'expt))
+    (*pack (lambda (powSymbol) 'expt))
    done))
   
 (define <InfixParen>
@@ -497,10 +507,10 @@ done))
     (*parser (char #\,))
     (*delayed (lambda () <InfixExpression>))   
     (*caten 2)
-    (*pack-with (lambda (comma exp) exp))
+    (*pack-with (lambda (psik infixExpression) infixExpression))
     *star
     (*caten 2)
-    (*pack-with (lambda (exp rest) `(,exp ,@rest)))
+    (*pack-with (lambda (infixExpression rest) `(,infixExpression ,@rest)))
     
     (*parser <epsilon>)
     (*disj 2)
@@ -545,7 +555,7 @@ done))
       (*parser (char #\-))
       (*parser (<removeSpaces> <InfixArrayFuncall>))
       (*caten 2)
-      (*pack-with (lambda (sign exp) `(- ,exp)))
+      (*pack-with (lambda (Minus expr) `(- ,expr)))
       
       (*disj 2)
     done))
@@ -781,7 +791,3 @@ done))
 
 (define <remSpacesCommentsSexpr> <remSpacesCommentsSexpr>)
 (define <sexpr> <Sexpr>)
-
-
-
-
