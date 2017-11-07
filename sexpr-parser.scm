@@ -1,40 +1,4 @@
 (load "pc.scm")
-;path:/users/studs/bsc/2016/alonye/Downloads/comp181ass1-master/
-
-;things to solve:
-#|   > (test-string <Sexpr> "#\tabs")
-Failure, Test result is: ((match  ) (remaining s))
-The expected result was: (failed with report:)
-
-> (test-string <Sexpr> "( let ((x 2)
-    (y 8))
-    + x y   )")
-Failure, Test result is: ((match (let ((x 2) (y 8)) + x y)) (remaining ))
-The expected result was: ((match (+ (+ 9 (expt 4 3)) 6)) (remaining ))
-
-> (test-string <Sexpr> "#()")
-Failure, Test result is: ((match #()) (remaining ))
-The expected result was: ((match (#())) (remaining ))
-
-> (test-string <Sexpr> "#(1 2)")
-Failure, Test result is: ((match #(1 2)) (remaining ))
-The expected result was: ((match (#(1 2))) (remaining ))
-
-> (test-string <Sexpr> "#((a b) #(1) 3)")
-Failure, Test result is: ((match #((a b) #(1) 3)) (remaining ))
-The expected result was: ((match (#((a b) (#(1)) 3))) (remaining ))
-
-> (test-string <Sexpr> "`(the answer is: ##2 * 3 + 4 * 5)")
-Failure, Test result is: (failed with report:)
-The expected result was: ((match `(the answer is: (+ (* 2 3) (* 4 5)))) (remaining ))
-
-> (test-string <Sexpr> " (let ((result ##a[0] + 2 * a[1] + 3 ^ a[2] - a[3] * b[i][j][i + j]))result)")
-Failure, Test result is: ((match (let ((result (- (+ (+ (vector-ref a 0) (* 2 (vector-ref a 1))) (expt 3 (vector-ref a 2))) (* (vector-ref a 3) (vector-ref (vector-ref (vector-ref b i) j) (+ i j)))))) result)) (remaining ))
-The expected result was: ((match (let ((result (- (+ (+ (vector-ref a 0) (* 2 (vector-ref a 1))) (expt 3 (vector-ref a 2))) (* (vector-ref a 3) (vector-ref (vector-ref (vector-ref b i) j) (+ i j)))))) result) (remaining )))
-
-
- |#
-
 
 ; ################## HELPER PARSERS
 
@@ -64,7 +28,7 @@ The expected result was: ((match (let ((result (- (+ (+ (vector-ref a 0) (* 2 (v
    (*caten 3)
    done)))
 
-(define <parserAfterComment>
+(define <skip>
   (lambda (<parser>)
   (new (*parser (word "#;"))
        (*delayed <parser>)
@@ -74,7 +38,7 @@ The expected result was: ((match (let ((result (- (+ (+ (vector-ref a 0) (* 2 (v
 (define <comment>
   (lambda (<parser>)
     (new
-      (*parser (<parserAfterComment> <parser>))
+      (*parser (<skip> <parser>))
       (*parser <lineComment>)
       (*disj 2)
       done)))
@@ -109,7 +73,7 @@ The expected result was: ((match (let ((result (- (+ (+ (vector-ref a 0) (* 2 (v
      done)))
      
 (define <removeSpaces>
-    (lambda (<p>) ;gets parser and cleans all the whitspaces
+    (lambda (<p>) ;gets parser and cleans all the whitespaces
       (new 
         (*parser (star <whitespace>))
         (*parser <p>)
@@ -194,8 +158,6 @@ The expected result was: ((match (let ((result (- (+ (+ (vector-ref a 0) (* 2 (v
   (lambda (lst)
     (string->symbol (list->string lst))
 ))
-
-; #####################################################
 
 
 ;######################### CHAR ##########################
@@ -320,10 +282,6 @@ done))
 
 (define <StringLiteralChar>  
   (const (lambda(ch) (and (not(char=? #\\ ch)) (not(char=? #\" ch))))))
-
-#| (define <StringChar> 
-  (disj <StringHexChar> <StringMetaChar> <StringLiteralChar>))
- |#
 
  (define <StringChar> 
   (new 
@@ -621,8 +579,7 @@ done))
       (*parser (<removeSpaces> <InfixPow>))
       (*disj 2)  
 done))
-
-   
+  
   
 (define <InfixAddSub>
     (new
@@ -648,9 +605,7 @@ done))
       (*disj 2)  
 done))
      
-   
-
-
+  
 
 (define ^<InfixExpression>
   (new
@@ -702,14 +657,17 @@ done))
   
      
 (define <Vector>
-  (new
-    (*parser (word "#("))
-    (*parser <sexprWithSpace>) *star
-    (*parser (word ")"))
-    (*caten 3)
-    (*pack-with (lambda(left_br Sexpr right_br ) `#(,@Sexpr) ))
-      done))
   
+  (new
+   (*parser (word "#("))
+   (*delayed (lambda () <sexpr>))
+   *star
+   (*parser (char #\)))   
+   (*caten 3)
+   (*pack-with (lambda (p1 expr p2)
+     `#(,@expr)))
+   done))
+
      
 (define <Quoted>
   (new
@@ -727,7 +685,7 @@ done))
     (*caten 2)
     (*pack-with (lambda(qq Sexpr)  (list 'quasiquote Sexpr)))
       done))
-  
+
      
 (define <Unquoted>
   (new
